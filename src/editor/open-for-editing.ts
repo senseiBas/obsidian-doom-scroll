@@ -1,5 +1,12 @@
 import { MarkdownView, type TFile, type WorkspaceLeaf } from 'obsidian';
 
+export async function openFileNormally(
+	leaf: WorkspaceLeaf,
+	file: TFile,
+): Promise<void> {
+	await leaf.openFile(file, { active: true });
+}
+
 export async function openFileForEditing(
 	leaf: WorkspaceLeaf,
 	file: TFile,

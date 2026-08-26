@@ -14,7 +14,10 @@ type VirtualFeedOptions = {
 	parentEl: HTMLElement;
 	files: readonly TFile[];
 	anchorIndex: number;
-	onOpenNote: (file: TFile) => void;
+	initialScrollTop?: number;
+	onInternalLink: (sourceFile: TFile, linkText: string) => void;
+	onEditNote: (file: TFile) => void;
+	onOpenNoteNormally: (file: TFile) => void;
 };
 
 export class VirtualFeed extends Component {
@@ -53,7 +56,8 @@ export class VirtualFeed extends Component {
 		const model = this.createHeightModel();
 		this.bottomSpacerEl.setCssProps({ height: `${model.totalHeight}px` });
 		this.viewportEl.scrollTop =
-			model.offsets[this.options.anchorIndex] ?? 0;
+			this.options.initialScrollTop ??
+			(model.offsets[this.options.anchorIndex] ?? 0);
 		this.updateWindow();
 	}
 
@@ -71,6 +75,10 @@ export class VirtualFeed extends Component {
 
 	refresh(): void {
 		this.scheduleUpdate();
+	}
+
+	getScrollTop(): number {
+		return this.viewportEl.scrollTop;
 	}
 
 	private scheduleUpdate(): void {
@@ -141,7 +149,9 @@ export class VirtualFeed extends Component {
 			onHeightChanged: (height) => {
 				this.recordHeight(index, file.path, height);
 			},
-			onOpen: this.options.onOpenNote,
+			onInternalLink: this.options.onInternalLink,
+			onEdit: this.options.onEditNote,
+			onOpenNormally: this.options.onOpenNoteNormally,
 		});
 		this.mountedCards.set(index, card);
 		this.addChild(card);

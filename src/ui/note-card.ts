@@ -11,7 +11,9 @@ type NoteCardOptions = {
 	file: TFile;
 	parentEl: HTMLElement;
 	onHeightChanged: (height: number) => void;
-	onOpen: (file: TFile) => void;
+	onInternalLink: (sourceFile: TFile, linkText: string) => void;
+	onEdit: (file: TFile) => void;
+	onOpenNormally: (file: TFile) => void;
 };
 
 export class NoteCard extends Component {
@@ -38,17 +40,43 @@ export class NoteCard extends Component {
 
 		const actionsEl = headerEl.createDiv('doom-scroll-note-actions');
 		new ButtonComponent(actionsEl)
+			.setButtonText('Open')
 			.setIcon('file-text')
 			.setTooltip('Open note')
-			.onClick(() => this.options.onOpen(this.options.file));
+			.onClick(() => this.options.onOpenNormally(this.options.file));
 		new ButtonComponent(actionsEl)
 			.setButtonText('Edit / exit here')
 			.setIcon('pencil')
-			.onClick(() => this.options.onOpen(this.options.file));
+			.onClick(() => this.options.onEdit(this.options.file));
 
 		const markdownEl = this.containerEl.createDiv({
 			cls: ['doom-scroll-note-content', 'markdown-rendered'],
 		});
+		this.registerDomEvent(
+			markdownEl,
+			'click',
+			(event) => {
+				if (event.button !== 0) {
+					return;
+				}
+				const target = event.target as Element | null;
+				const linkEl = target?.closest?.('a.internal-link');
+				if (!linkEl || !markdownEl.contains(linkEl)) {
+					return;
+				}
+				const linkText =
+					linkEl.getAttribute('data-href') ??
+					linkEl.getAttribute('href');
+				if (!linkText) {
+					return;
+				}
+
+				event.preventDefault();
+				event.stopImmediatePropagation();
+				this.options.onInternalLink(this.options.file, linkText);
+			},
+			{ capture: true },
+		);
 
 		this.resizeObserver = new ResizeObserver(() => {
 			const height = this.containerEl.getBoundingClientRect().height;

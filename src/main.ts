@@ -6,11 +6,9 @@ import {
 	type WorkspaceLeaf,
 } from 'obsidian';
 import { DOOM_SCROLL_VIEW_TYPE } from './constants';
+import type { DoomScrollViewState } from './types/feed';
 import { DoomScrollView } from './ui/doom-scroll-view';
-import {
-	SourcePickerModal,
-	type FolderFeedChoice,
-} from './ui/source-picker-modal';
+import { SourcePickerModal } from './ui/source-picker-modal';
 
 export default class DoomScrollPlugin extends Plugin {
 	override onload(): void {
@@ -79,14 +77,13 @@ export default class DoomScrollPlugin extends Plugin {
 	}
 
 	private openSourcePicker(file: TFile, preferredLeaf?: WorkspaceLeaf): void {
-		new SourcePickerModal(this.app, (choice) => {
-			void this.openFolderFeed(file, choice, preferredLeaf);
+		new SourcePickerModal(this.app, file, (state) => {
+			void this.openFeed(state, preferredLeaf);
 		}).open();
 	}
 
-	private async openFolderFeed(
-		anchor: TFile,
-		choice: FolderFeedChoice,
+	private async openFeed(
+		state: DoomScrollViewState,
 		preferredLeaf?: WorkspaceLeaf,
 	): Promise<void> {
 		const activeMarkdownView =
@@ -99,11 +96,7 @@ export default class DoomScrollPlugin extends Plugin {
 		await targetLeaf.setViewState({
 			type: DOOM_SCROLL_VIEW_TYPE,
 			active: true,
-			state: {
-				source: 'folder',
-				anchorPath: anchor.path,
-				recursive: choice.recursive,
-			},
+			state,
 		});
 		await this.app.workspace.revealLeaf(targetLeaf);
 	}
