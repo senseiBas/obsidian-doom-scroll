@@ -45,7 +45,7 @@ function isInsideFolder(
 	);
 }
 
-function compareFiles(
+export function compareVaultFilesNaturally(
 	left: VaultFileDescriptor,
 	right: VaultFileDescriptor,
 ): number {
@@ -53,6 +53,12 @@ function compareFiles(
 	return basenameResult !== 0
 		? basenameResult
 		: naturalCollator.compare(left.path, right.path);
+}
+
+export function orderVaultFilesNaturally<
+	TFile extends VaultFileDescriptor,
+>(files: readonly TFile[]): TFile[] {
+	return files.slice().sort(compareVaultFilesNaturally);
 }
 
 export function orderFolderFeed<TFile extends VaultFileDescriptor>(
@@ -73,7 +79,7 @@ export function orderFolderFeed<TFile extends VaultFileDescriptor>(
 				isInsideFolder(file.path, folderPath, recursive),
 		)
 		.slice()
-		.sort(compareFiles);
+		.sort(compareVaultFilesNaturally);
 
 	return {
 		files: orderedFiles,

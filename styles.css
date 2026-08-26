@@ -25,12 +25,21 @@
 }
 
 .doom-scroll-source-label {
+	flex: 1 1 auto;
 	overflow: hidden;
 	color: var(--text-muted);
 	font-size: var(--font-ui-small);
 	font-weight: var(--font-semibold);
+	text-align: center;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+.doom-scroll-history-actions {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: var(--size-4-1);
 }
 
 .doom-scroll-feed-host {
