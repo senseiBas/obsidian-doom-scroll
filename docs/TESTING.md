@@ -20,6 +20,8 @@ Run `npm run check` before starting. Obsidian should load `main.js`,
 6. Click an internal link. Test opening normally and branching to every
    available feed source. Confirm external links retain Obsidian's normal
    behavior.
+   Hold Ctrl (Cmd on macOS) while hovering the internal link and confirm
+   Obsidian's native Page preview appears in both ordinary and Base feeds.
 7. Use Back and Forward after scrolling and branching. Confirm each feed returns
    to approximately its previous position and that a new branch clears Forward.
 8. Use **Open**, the global **Exit feed** button, and the **Exit feed to anchor
