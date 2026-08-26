@@ -1,6 +1,7 @@
 import {
 	ButtonComponent,
 	Component,
+	Keymap,
 	MarkdownRenderer,
 	Notice,
 	Platform,
@@ -26,6 +27,7 @@ type NoteCardOptions = {
 	) => void;
 	onEdit: (file: TFile) => void;
 	onOpenNormally: (file: TFile) => void;
+	onOpenInBackgroundTab: (file: TFile) => void;
 	onQuickEditStart: () => boolean;
 	onQuickEditEnd: () => void;
 };
@@ -67,8 +69,14 @@ export class NoteCard extends Component implements HoverParent {
 		new ButtonComponent(actionsEl)
 			.setButtonText('Open')
 			.setIcon('file-text')
-			.setTooltip('Open note')
-			.onClick(() => this.options.onOpenNormally(this.options.file));
+			.setTooltip('Open note (Ctrl/Cmd+click: background tab)')
+			.onClick((event) => {
+				if (Keymap.isModEvent(event) === 'tab') {
+					this.options.onOpenInBackgroundTab(this.options.file);
+				} else {
+					this.options.onOpenNormally(this.options.file);
+				}
+			});
 		this.editButton = new ButtonComponent(actionsEl)
 			.setButtonText(Platform.isMobile ? 'Edit / exit here' : 'Quick edit')
 			.setIcon('pencil')

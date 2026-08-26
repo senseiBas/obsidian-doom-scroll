@@ -12,6 +12,7 @@ import {
 	openFileForEditing,
 	openFileNormally,
 } from '../editor/open-for-editing';
+import { openFileInBackgroundTab } from '../editor/open-in-background-tab';
 import { FeedHistory } from '../navigation/feed-history';
 import type { ExcludedFolderRule } from '../settings';
 import type {
@@ -128,6 +129,9 @@ export class DoomScrollBasesView extends BasesView {
 			},
 			onOpenNoteNormally: (file) => {
 				void openFileNormally(this.app.workspace.getLeaf(false), file);
+			},
+			onOpenNoteInBackgroundTab: (file) => {
+				void openFileInBackgroundTab(this.app, file);
 			},
 			onQuickEditStateChange: (editing) => {
 				this.quickEditing = editing;

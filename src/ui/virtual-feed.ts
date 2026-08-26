@@ -23,6 +23,7 @@ type VirtualFeedOptions = {
 	) => void;
 	onEditNote: (file: TFile) => void;
 	onOpenNoteNormally: (file: TFile) => void;
+	onOpenNoteInBackgroundTab: (file: TFile) => void;
 	onQuickEditStateChange?: (editing: boolean) => void;
 };
 
@@ -161,6 +162,7 @@ export class VirtualFeed extends Component {
 			onTagLink: this.options.onTagLink,
 			onEdit: this.options.onEditNote,
 			onOpenNormally: this.options.onOpenNoteNormally,
+			onOpenInBackgroundTab: this.options.onOpenNoteInBackgroundTab,
 			onQuickEditStart: () => this.beginQuickEdit(index),
 			onQuickEditEnd: () => this.endQuickEdit(index),
 		});

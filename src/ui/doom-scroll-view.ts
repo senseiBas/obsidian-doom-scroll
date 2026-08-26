@@ -15,6 +15,7 @@ import {
 	openFileForEditing,
 	openFileNormally,
 } from '../editor/open-for-editing';
+import { openFileInBackgroundTab } from '../editor/open-in-background-tab';
 import {
 	describeFeedSource,
 } from '../feed-sources/related-feed-source';
@@ -191,6 +192,9 @@ export class DoomScrollView extends ItemView {
 			},
 			onOpenNoteNormally: (file) => {
 				void openFileNormally(this.leaf, file);
+			},
+			onOpenNoteInBackgroundTab: (file) => {
+				void openFileInBackgroundTab(this.app, file);
 			},
 			onQuickEditStateChange: (editing) => {
 				this.quickEditing = editing;
