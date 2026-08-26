@@ -20,7 +20,7 @@ Obsidian Doom Scroll is a community plugin for browsing a vault as a continuous,
 - Outgoing-link, backlink, and exact-tag feeds.
 - A custom Bases view that preserves the supplied filters, sorting, and limits.
 - Virtualized, bidirectional scrolling through full rendered notes.
-- Native actions to open or edit a note and exit the feed.
+- Native actions to open a note, plus an inline desktop Quick Edit mode.
 - An internal-link junction menu for starting a related feed.
 - In-memory Back and Forward navigation with scroll restoration.
 - Desktop and mobile support.
@@ -38,7 +38,10 @@ Obsidian Doom Scroll is a community plugin for browsing a vault as a continuous,
   be included; the first note in natural filename order becomes the anchor.
 - Use **Doom scroll: Exit feed to anchor note** or the visible **Exit feed**
   button to return to the anchor in source mode, focused at the end of the note.
-- Each rendered note also has **Open** and **Edit / exit here** actions.
+- Each rendered note has **Open** and **Quick edit** actions on desktop. Quick
+  Edit shows the raw Markdown inside the card with **Save**, **Cancel**, and
+  **Save & open full editor** actions. On mobile, the edit action opens
+  Obsidian's normal editor.
 
 ## Using a Base as a feed
 
@@ -70,6 +73,12 @@ menu can open the destination normally or branch to a new feed. Feed contexts
 and scroll positions are kept in memory for Back and Forward navigation.
 Rendered tags use a similar junction: open the tag through Obsidian normally or
 start an exact-tag Doom Scroll feed.
+
+Desktop Quick Edit uses Obsidian's textarea component and Vault API. It keeps
+the card mounted and the feed stationary while editing, permits only one open
+editor, and writes only after an explicit save. If the note changed elsewhere
+after Quick Edit opened, the save is refused instead of overwriting that newer
+content.
 
 ## Excluded folders
 

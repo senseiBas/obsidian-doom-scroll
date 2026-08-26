@@ -63,6 +63,10 @@
 	scroll-behavior: auto;
 }
 
+.doom-scroll-viewport.is-quick-editing {
+	overflow: hidden;
+}
+
 .doom-scroll-spacer {
 	width: 1px;
 	pointer-events: none;
@@ -123,6 +127,30 @@
 
 .doom-scroll-note-content > :last-child {
 	margin-bottom: 0;
+}
+
+.doom-scroll-quick-edit {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-3);
+}
+
+.doom-scroll-quick-edit-input {
+	width: 100%;
+	height: clamp(240px, 55vh, 640px);
+	min-height: 240px;
+	padding: var(--size-4-3);
+	resize: vertical;
+	font-family: var(--font-monospace);
+	font-size: var(--font-text-size);
+	line-height: var(--line-height-normal);
+}
+
+.doom-scroll-quick-edit-actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: var(--size-4-2);
 }
 
 .doom-scroll-empty-state {
