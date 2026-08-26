@@ -1,1 +1,140 @@
-/* Obsidian Doom Scroll styles are intentionally theme-native. */
+/* Obsidian Doom Scroll uses Obsidian theme variables throughout. */
+
+.doom-scroll-view {
+	overflow: hidden !important;
+	padding: 0 !important;
+}
+
+.doom-scroll-shell {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+	background: var(--background-primary);
+}
+
+.doom-scroll-toolbar {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-4-2);
+	padding: var(--size-4-2) var(--size-4-3);
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+}
+
+.doom-scroll-source-label {
+	overflow: hidden;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-semibold);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.doom-scroll-feed-host {
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+.doom-scroll-viewport {
+	height: 100%;
+	overflow-y: auto;
+	overscroll-behavior-y: contain;
+	-webkit-overflow-scrolling: touch;
+	background: var(--background-primary);
+	scroll-behavior: auto;
+}
+
+.doom-scroll-spacer {
+	width: 1px;
+	pointer-events: none;
+}
+
+.doom-scroll-items {
+	width: 100%;
+}
+
+.doom-scroll-note {
+	width: min(100%, var(--file-line-width, 900px));
+	margin: 0 auto;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+}
+
+.doom-scroll-note-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-4-3);
+	min-height: 44px;
+	padding: var(--size-4-2) var(--size-4-4);
+	border-bottom: 1px solid var(--background-modifier-border-hover);
+	background: var(--background-secondary-alt);
+}
+
+.doom-scroll-note-title {
+	min-width: 0;
+	overflow: hidden;
+	color: var(--text-normal);
+	font-size: var(--font-ui-medium);
+	font-weight: var(--font-semibold);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.doom-scroll-note-actions {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: var(--size-4-2);
+}
+
+.doom-scroll-note-actions button,
+.doom-scroll-toolbar button {
+	min-height: 36px;
+}
+
+.doom-scroll-note-content {
+	padding: var(--size-4-4);
+	overflow-wrap: anywhere;
+}
+
+.doom-scroll-note-content > :first-child {
+	margin-top: 0;
+}
+
+.doom-scroll-note-content > :last-child {
+	margin-bottom: 0;
+}
+
+.doom-scroll-empty-state {
+	display: grid;
+	min-height: 100%;
+	place-items: center;
+	padding: var(--size-4-6);
+	color: var(--text-muted);
+	text-align: center;
+}
+
+.is-mobile .doom-scroll-note-actions button,
+.is-mobile .doom-scroll-toolbar button {
+	min-width: 44px;
+	min-height: 44px;
+}
+
+@media (max-width: 480px) {
+	.doom-scroll-note-header {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.doom-scroll-note-actions {
+		width: 100%;
+	}
+
+	.doom-scroll-note-actions button:last-child {
+		flex: 1 1 auto;
+	}
+}
