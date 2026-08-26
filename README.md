@@ -14,7 +14,7 @@ Obsidian Doom Scroll is a community plugin for browsing a vault as a continuous,
 - Treat Android and other mobile clients as primary targets.
 - Use supported public Obsidian APIs and stay local and offline.
 
-## Planned v0.1.0
+## Version 0.1.0 scope
 
 - Folder feeds, with optional subfolders and an anchor note.
 - Outgoing-link, backlink, and exact-tag feeds.
@@ -24,6 +24,17 @@ Obsidian Doom Scroll is a community plugin for browsing a vault as a continuous,
 - An internal-link junction menu for starting a related feed.
 - In-memory Back and Forward navigation with scroll restoration.
 - Desktop and mobile support.
+
+## Using a Base as a feed
+
+Open a `.base` file, add or select a view, and choose **Doom scroll** from
+Obsidian's native view-layout menu. The feed uses the exact result set supplied
+by Bases, including the configured filters, sorting, and result limit. Changing
+the Base configuration updates the feed without changing the source file.
+
+The first result is the initial anchor. Following an internal link to another
+note in the same result set offers **Doom scroll: Current Base view**, which
+keeps the Base ordering and makes the navigation available to Back and Forward.
 
 ## Development
 

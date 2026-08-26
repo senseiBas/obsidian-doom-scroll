@@ -4,7 +4,13 @@ import { buildFeedSourceChoices } from './source-picker-modal';
 
 type JunctionAction =
 	| { kind: 'open'; label: string }
+	| { kind: 'custom'; label: string; run: () => void }
 	| { kind: 'feed'; label: string; state: DoomScrollViewState };
+
+export type JunctionCustomAction = {
+	label: string;
+	run: () => void;
+};
 
 export class JunctionModal extends FuzzySuggestModal<JunctionAction> {
 	private readonly items: JunctionAction[];
@@ -14,10 +20,16 @@ export class JunctionModal extends FuzzySuggestModal<JunctionAction> {
 		linkedFile: TFile,
 		private readonly onOpenNormally: () => void,
 		private readonly onStartFeed: (state: DoomScrollViewState) => void,
+		customActions: JunctionCustomAction[] = [],
 	) {
 		super(app);
 		this.items = [
 			{ kind: 'open', label: 'Open note normally' },
+			...customActions.map((action) => ({
+				kind: 'custom' as const,
+				label: action.label,
+				run: action.run,
+			})),
 			...buildFeedSourceChoices(app, linkedFile).map((choice) => ({
 				kind: 'feed' as const,
 				label: `Doom scroll: ${choice.label}`,
@@ -38,6 +50,8 @@ export class JunctionModal extends FuzzySuggestModal<JunctionAction> {
 	onChooseItem(item: JunctionAction): void {
 		if (item.kind === 'open') {
 			this.onOpenNormally();
+		} else if (item.kind === 'custom') {
+			item.run();
 		} else {
 			this.onStartFeed(item.state);
 		}

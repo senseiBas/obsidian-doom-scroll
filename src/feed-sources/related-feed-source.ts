@@ -101,5 +101,7 @@ export function describeFeedSource(state: DoomScrollViewState): string {
 			return 'Backlinks';
 		case 'tag':
 			return `Tag ${state.tag}`;
+		case 'base':
+			return `Base: ${state.label}`;
 	}
 }
