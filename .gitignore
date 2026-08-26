@@ -18,5 +18,15 @@ main.js
 # obsidian
 data.json
 
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# Test and coverage output
+coverage
+.vitest
+
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
