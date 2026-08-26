@@ -23,6 +23,7 @@ type VirtualFeedOptions = {
 	) => void;
 	onEditNote: (file: TFile) => void;
 	onOpenNoteNormally: (file: TFile) => void;
+	onQuickEditStateChange?: (editing: boolean) => void;
 };
 
 export class VirtualFeed extends Component {
@@ -35,6 +36,7 @@ export class VirtualFeed extends Component {
 
 	private frameId: number | null = null;
 	private resizeObserver: ResizeObserver | null = null;
+	private editingIndex: number | null = null;
 
 	constructor(private readonly options: VirtualFeedOptions) {
 		super();
@@ -74,6 +76,7 @@ export class VirtualFeed extends Component {
 		}
 		this.resizeObserver?.disconnect();
 		this.resizeObserver = null;
+		this.editingIndex = null;
 		this.mountedCards.clear();
 		this.viewportEl.remove();
 	}
@@ -158,6 +161,8 @@ export class VirtualFeed extends Component {
 			onTagLink: this.options.onTagLink,
 			onEdit: this.options.onEditNote,
 			onOpenNormally: this.options.onOpenNoteNormally,
+			onQuickEditStart: () => this.beginQuickEdit(index),
+			onQuickEditEnd: () => this.endQuickEdit(index),
 		});
 		this.mountedCards.set(index, card);
 		this.addChild(card);
@@ -165,10 +170,32 @@ export class VirtualFeed extends Component {
 
 	private unmountOutsideRange(startIndex: number, endIndex: number): void {
 		for (const [index, card] of this.mountedCards) {
-			if (index < startIndex || index > endIndex) {
+			if (
+				index !== this.editingIndex &&
+				(index < startIndex || index > endIndex)
+			) {
 				this.removeChild(card);
 				this.mountedCards.delete(index);
 			}
+		}
+	}
+
+	private beginQuickEdit(index: number): boolean {
+		if (this.editingIndex !== null) {
+			return false;
+		}
+		this.editingIndex = index;
+		this.viewportEl.addClass('is-quick-editing');
+		this.options.onQuickEditStateChange?.(true);
+		return true;
+	}
+
+	private endQuickEdit(index: number): void {
+		if (this.editingIndex === index) {
+			this.editingIndex = null;
+			this.viewportEl.removeClass('is-quick-editing');
+			this.scheduleUpdate();
+			this.options.onQuickEditStateChange?.(false);
 		}
 	}
 

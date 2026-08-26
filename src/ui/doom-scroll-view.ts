@@ -33,6 +33,8 @@ export class DoomScrollView extends ItemView {
 	private history: FeedHistory<DoomScrollViewState> | null = null;
 	private feedComponent: VirtualFeed | null = null;
 	private opened = false;
+	private quickEditing = false;
+	private pendingVaultRefresh = false;
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -123,20 +125,20 @@ export class DoomScrollView extends ItemView {
 						: context,
 				);
 				this.state = this.history.current.context;
-				this.renderFeed();
+				this.refreshAfterVaultChange();
 			}),
 		);
 		this.registerEvent(
 			this.app.vault.on('delete', (file) => {
 				if (file instanceof TFile) {
-					this.rerenderPreservingScroll();
+					this.refreshAfterVaultChange();
 				}
 			}),
 		);
 		this.registerEvent(
 			this.app.metadataCache.on('resolved', () => {
 				if (this.state?.source !== 'folder') {
-					this.rerenderPreservingScroll();
+					this.refreshAfterVaultChange();
 				}
 			}),
 		);
@@ -189,6 +191,13 @@ export class DoomScrollView extends ItemView {
 			},
 			onOpenNoteNormally: (file) => {
 				void openFileNormally(this.leaf, file);
+			},
+			onQuickEditStateChange: (editing) => {
+				this.quickEditing = editing;
+				if (!editing && this.pendingVaultRefresh) {
+					this.pendingVaultRefresh = false;
+					this.rerenderPreservingScroll();
+				}
 			},
 		});
 		this.addChild(this.feedComponent);
@@ -314,6 +323,14 @@ export class DoomScrollView extends ItemView {
 		this.renderFeed();
 	}
 
+	private refreshAfterVaultChange(): void {
+		if (this.quickEditing) {
+			this.pendingVaultRefresh = true;
+			return;
+		}
+		this.rerenderPreservingScroll();
+	}
+
 	private saveScrollPosition(): void {
 		if (this.history && this.feedComponent) {
 			this.history.saveScroll(this.feedComponent.getScrollTop());
@@ -325,6 +342,8 @@ export class DoomScrollView extends ItemView {
 			this.removeChild(this.feedComponent);
 			this.feedComponent = null;
 		}
+		this.quickEditing = false;
+		this.pendingVaultRefresh = false;
 	}
 
 	private renderEmptyState(message: string): void {

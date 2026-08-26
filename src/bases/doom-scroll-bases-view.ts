@@ -36,6 +36,8 @@ export class DoomScrollBasesView extends BasesView {
 	private history: FeedHistory<string> | null = null;
 	private baseState: BaseFeedState | null = null;
 	private files: TFile[] = [];
+	private quickEditing = false;
+	private pendingDataRefresh = false;
 
 	constructor(
 		controller: QueryController,
@@ -75,7 +77,11 @@ export class DoomScrollBasesView extends BasesView {
 		) {
 			this.history = new FeedHistory(anchorPath);
 		}
-		this.renderFeed();
+		if (this.quickEditing) {
+			this.pendingDataRefresh = true;
+		} else {
+			this.renderFeed();
+		}
 	}
 
 	override onunload(): void {
@@ -122,6 +128,16 @@ export class DoomScrollBasesView extends BasesView {
 			},
 			onOpenNoteNormally: (file) => {
 				void openFileNormally(this.app.workspace.getLeaf(false), file);
+			},
+			onQuickEditStateChange: (editing) => {
+				this.quickEditing = editing;
+				if (!editing && this.pendingDataRefresh) {
+					this.pendingDataRefresh = false;
+					this.history?.saveScroll(
+						this.feedComponent?.getScrollTop() ?? 0,
+					);
+					this.renderFeed();
+				}
 			},
 		});
 		this.addChild(this.feedComponent);
@@ -264,5 +280,7 @@ export class DoomScrollBasesView extends BasesView {
 			this.removeChild(this.feedComponent);
 			this.feedComponent = null;
 		}
+		this.quickEditing = false;
+		this.pendingDataRefresh = false;
 	}
 }

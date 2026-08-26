@@ -22,9 +22,9 @@ Run `npm run check` before starting. Obsidian should load `main.js`,
    behavior.
 7. Use Back and Forward after scrolling and branching. Confirm each feed returns
    to approximately its previous position and that a new branch clears Forward.
-8. Use **Open**, **Edit / exit here**, the global **Exit feed** button, and the
-   **Exit feed to anchor note** command. Editing should open the exact note in
-   source mode with focus and the cursor at the end.
+8. Use **Open**, the global **Exit feed** button, and the **Exit feed to anchor
+   note** command. Exiting should open the exact note in source mode with focus
+   and the cursor at the end.
 9. Rename and delete both anchor and non-anchor files while a feed is open.
    Confirm the feed refreshes or shows a clear unavailable-anchor message.
 10. Open a Base containing filtered, sorted, and limited views. Select the
@@ -42,6 +42,16 @@ Run `npm run check` before starting. Obsidian should load `main.js`,
     excluded notes disappear from every ordinary source while custom Base views
     keep their exact supplied results. Rename and delete an excluded folder and
     verify the settings follow or remove it.
+15. Choose **Quick edit** on desktop. Verify the card changes into a raw
+    Markdown textarea, focus starts at the end, the feed itself cannot scroll,
+    and a second card cannot enter Quick Edit at the same time.
+16. Change text and test **Cancel**, **Save**, and **Save & open full editor**.
+    Cancel must not write; Save must return to the rendered card; Save & open
+    must save first and then open Obsidian's source editor at the end.
+17. While Quick Edit is open, change the same note from another Obsidian pane,
+    then try to save the Quick Edit draft. Confirm a conflict notice appears,
+    the newer file is not overwritten, and the draft remains available in the
+    textarea.
 
 ## Android
 
