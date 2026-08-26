@@ -5,6 +5,12 @@
 	padding: 0 !important;
 }
 
+.doom-scroll-bases-view {
+	height: 100%;
+	min-height: 0;
+	overflow: hidden;
+}
+
 .doom-scroll-shell {
 	display: flex;
 	flex-direction: column;

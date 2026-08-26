@@ -5,17 +5,37 @@ import {
 	TFile,
 	type WorkspaceLeaf,
 } from 'obsidian';
-import { DOOM_SCROLL_VIEW_TYPE } from './constants';
+import { BaseContextRegistry } from './bases/base-context-registry';
+import { DoomScrollBasesView } from './bases/doom-scroll-bases-view';
+import {
+	DOOM_SCROLL_BASES_VIEW_TYPE,
+	DOOM_SCROLL_VIEW_TYPE,
+} from './constants';
 import type { DoomScrollViewState } from './types/feed';
 import { DoomScrollView } from './ui/doom-scroll-view';
 import { SourcePickerModal } from './ui/source-picker-modal';
 
 export default class DoomScrollPlugin extends Plugin {
+	private readonly baseContexts = new BaseContextRegistry();
+
 	override onload(): void {
 		this.registerView(
 			DOOM_SCROLL_VIEW_TYPE,
-			(leaf) => new DoomScrollView(leaf),
+			(leaf) => new DoomScrollView(leaf, this.baseContexts),
 		);
+		this.registerBasesView(DOOM_SCROLL_BASES_VIEW_TYPE, {
+			name: 'Doom scroll',
+			icon: 'align-justify',
+			factory: (controller, containerEl) =>
+				new DoomScrollBasesView(
+					controller,
+					containerEl,
+					this.baseContexts,
+					(baseState, nextState) => {
+						void this.openFeedFromBase(baseState, nextState);
+					},
+				),
+		});
 
 		this.addRibbonIcon('align-justify', 'Doom scroll…', () => {
 			this.openPickerForActiveNote();
@@ -67,6 +87,10 @@ export default class DoomScrollPlugin extends Plugin {
 		);
 	}
 
+	override onunload(): void {
+		this.baseContexts.clear();
+	}
+
 	private openPickerForActiveNote(): void {
 		const file = this.getActiveMarkdownFile();
 		if (!file) {
@@ -99,6 +123,22 @@ export default class DoomScrollPlugin extends Plugin {
 			state,
 		});
 		await this.app.workspace.revealLeaf(targetLeaf);
+	}
+
+	private async openFeedFromBase(
+		baseState: DoomScrollViewState,
+		nextState: DoomScrollViewState,
+	): Promise<void> {
+		const targetLeaf = this.app.workspace.getLeaf(false);
+		await targetLeaf.setViewState({
+			type: DOOM_SCROLL_VIEW_TYPE,
+			active: true,
+			state: baseState,
+		});
+		await this.app.workspace.revealLeaf(targetLeaf);
+		if (targetLeaf.view instanceof DoomScrollView) {
+			targetLeaf.view.navigateTo(nextState);
+		}
 	}
 
 	private getActiveMarkdownFile(): TFile | null {

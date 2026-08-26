@@ -16,10 +16,18 @@ export type TagFeedState = {
 	tag: string;
 };
 
+export type BaseFeedState = {
+	source: 'base';
+	anchorPath: string;
+	contextId: string;
+	label: string;
+};
+
 export type DoomScrollViewState =
 	| FolderFeedState
 	| LinkFeedState
-	| TagFeedState;
+	| TagFeedState
+	| BaseFeedState;
 
 export type ResolvedFeed = {
 	files: TFile[];
@@ -47,6 +55,12 @@ export function isDoomScrollViewState(
 			return true;
 		case 'tag':
 			return typeof candidate.tag === 'string' && candidate.tag.length > 0;
+		case 'base':
+			return (
+				typeof candidate.contextId === 'string' &&
+				candidate.contextId.length > 0 &&
+				typeof candidate.label === 'string'
+			);
 		default:
 			return false;
 	}

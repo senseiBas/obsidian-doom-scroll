@@ -7,6 +7,7 @@ import {
 	type ViewStateResult,
 	type WorkspaceLeaf,
 } from 'obsidian';
+import type { BaseContextRegistry } from '../bases/base-context-registry';
 import { DOOM_SCROLL_VIEW_TYPE } from '../constants';
 import {
 	openFileForEditing,
@@ -30,7 +31,10 @@ export class DoomScrollView extends ItemView {
 	private feedComponent: VirtualFeed | null = null;
 	private opened = false;
 
-	constructor(leaf: WorkspaceLeaf) {
+	constructor(
+		leaf: WorkspaceLeaf,
+		private readonly baseContexts: BaseContextRegistry,
+	) {
 		super(leaf);
 		this.navigation = true;
 	}
@@ -48,7 +52,9 @@ export class DoomScrollView extends ItemView {
 	}
 
 	override getState(): Record<string, unknown> {
-		return this.state ? { ...this.state } : {};
+		return this.state && this.state.source !== 'base'
+			? { ...this.state }
+			: {};
 	}
 
 	override async setState(
@@ -88,6 +94,7 @@ export class DoomScrollView extends ItemView {
 					return;
 				}
 				this.saveScrollPosition();
+				this.baseContexts.renamePath(oldPath, file.path);
 				this.history.updateContexts((context) =>
 					context.anchorPath === oldPath
 						? { ...context, anchorPath: file.path }
@@ -122,7 +129,7 @@ export class DoomScrollView extends ItemView {
 			return;
 		}
 
-		const resolved = resolveFeed(this.app, this.state);
+		const resolved = resolveFeed(this.app, this.state, this.baseContexts);
 		if (!resolved) {
 			this.renderEmptyState('The anchor note is no longer available.');
 			new Notice('Doom scroll anchor note is no longer available.');
@@ -205,11 +212,11 @@ export class DoomScrollView extends ItemView {
 					false,
 				);
 			},
-			(state) => this.navigate(state),
+			(state) => this.navigateTo(state),
 		).open();
 	}
 
-	private navigate(state: DoomScrollViewState): void {
+	navigateTo(state: DoomScrollViewState): void {
 		const scrollTop = this.feedComponent?.getScrollTop() ?? 0;
 		if (this.history) {
 			this.state = this.history.navigate(state, scrollTop).context;
