@@ -36,6 +36,12 @@ Run `npm run check` before starting. Obsidian should load `main.js`,
     Back returns to the Base ordering.
 12. Disable and re-enable the plugin after using several feeds. Confirm there
     are no stale panes, duplicated listeners, or broken Base layouts.
+13. Click a rendered tag and test both **Open tag normally** and its exact-tag
+    Doom Scroll feed.
+14. Add direct-only and recursive exclusions in the plugin settings. Verify
+    excluded notes disappear from every ordinary source while custom Base views
+    keep their exact supplied results. Rename and delete an excluded folder and
+    verify the settings follow or remove it.
 
 ## Android
 

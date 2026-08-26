@@ -5,6 +5,7 @@ import {
 	type App,
 	type TFile,
 } from 'obsidian';
+import { normalizeRenderedTag } from '../feed-sources/tag-link';
 
 type NoteCardOptions = {
 	app: App;
@@ -12,6 +13,11 @@ type NoteCardOptions = {
 	parentEl: HTMLElement;
 	onHeightChanged: (height: number) => void;
 	onInternalLink: (sourceFile: TFile, linkText: string) => void;
+	onTagLink: (
+		sourceFile: TFile,
+		tag: string,
+		openNormally: () => void,
+	) => void;
 	onEdit: (file: TFile) => void;
 	onOpenNormally: (file: TFile) => void;
 };
@@ -21,6 +27,7 @@ export class NoteCard extends Component {
 
 	private active = false;
 	private resizeObserver: ResizeObserver | null = null;
+	private readonly passThroughTags = new WeakSet<HTMLElement>();
 
 	constructor(private readonly options: NoteCardOptions) {
 		super();
@@ -64,6 +71,29 @@ export class NoteCard extends Component {
 					return;
 				}
 				const target = event.target as Element | null;
+				const tagEl = target?.closest?.('a.tag') as HTMLElement | null;
+				if (tagEl && markdownEl.contains(tagEl)) {
+					if (this.passThroughTags.delete(tagEl)) {
+						return;
+					}
+					const tag = normalizeRenderedTag(
+						tagEl.getAttribute('data-tag') ??
+							tagEl.getAttribute('href') ??
+							tagEl.textContent,
+					);
+					if (!tag) {
+						return;
+					}
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					this.options.onTagLink(this.options.file, tag, () => {
+						if (tagEl.isConnected) {
+							this.passThroughTags.add(tagEl);
+							tagEl.click();
+						}
+					});
+					return;
+				}
 				const linkEl = target?.closest?.('a.internal-link');
 				if (!linkEl || !markdownEl.contains(linkEl)) {
 					return;

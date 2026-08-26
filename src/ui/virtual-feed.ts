@@ -16,6 +16,11 @@ type VirtualFeedOptions = {
 	anchorIndex: number;
 	initialScrollTop?: number;
 	onInternalLink: (sourceFile: TFile, linkText: string) => void;
+	onTagLink: (
+		sourceFile: TFile,
+		tag: string,
+		openNormally: () => void,
+	) => void;
 	onEditNote: (file: TFile) => void;
 	onOpenNoteNormally: (file: TFile) => void;
 };
@@ -150,6 +155,7 @@ export class VirtualFeed extends Component {
 				this.recordHeight(index, file.path, height);
 			},
 			onInternalLink: this.options.onInternalLink,
+			onTagLink: this.options.onTagLink,
 			onEdit: this.options.onEditNote,
 			onOpenNormally: this.options.onOpenNoteNormally,
 		});
