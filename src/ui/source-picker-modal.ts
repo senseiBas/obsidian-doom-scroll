@@ -1,11 +1,16 @@
 import { FuzzySuggestModal, type App, type TFile } from 'obsidian';
 import { getExactTags } from '../feed-sources/related-feed-source';
 import type { DoomScrollViewState } from '../types/feed';
+import { FolderPickerModal } from './folder-picker-modal';
 
 export type FeedSourceChoice = {
 	label: string;
 	state: DoomScrollViewState;
 };
+
+type SourcePickerChoice =
+	| FeedSourceChoice
+	| { label: string; action: 'choose-folder' };
 
 export function buildFeedSourceChoices(
 	app: App,
@@ -48,8 +53,8 @@ export function buildFeedSourceChoices(
 	return choices;
 }
 
-export class SourcePickerModal extends FuzzySuggestModal<FeedSourceChoice> {
-	private readonly items: FeedSourceChoice[];
+export class SourcePickerModal extends FuzzySuggestModal<SourcePickerChoice> {
+	private readonly items: SourcePickerChoice[];
 
 	constructor(
 		app: App,
@@ -57,19 +62,26 @@ export class SourcePickerModal extends FuzzySuggestModal<FeedSourceChoice> {
 		private readonly onChoose: (state: DoomScrollViewState) => void,
 	) {
 		super(app);
-		this.items = buildFeedSourceChoices(app, anchor);
+		this.items = [
+			...buildFeedSourceChoices(app, anchor),
+			{ label: 'Choose a folder…', action: 'choose-folder' },
+		];
 		this.setPlaceholder('Choose a doom scroll feed source…');
 	}
 
-	getItems(): FeedSourceChoice[] {
+	getItems(): SourcePickerChoice[] {
 		return this.items;
 	}
 
-	getItemText(item: FeedSourceChoice): string {
+	getItemText(item: SourcePickerChoice): string {
 		return item.label;
 	}
 
-	onChooseItem(item: FeedSourceChoice): void {
+	onChooseItem(item: SourcePickerChoice): void {
+		if ('action' in item) {
+			new FolderPickerModal(this.app, this.onChoose).open();
+			return;
+		}
 		this.onChoose(item.state);
 	}
 }

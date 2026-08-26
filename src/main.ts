@@ -1,6 +1,5 @@
 import {
 	MarkdownView,
-	Notice,
 	Plugin,
 	TFile,
 	type WorkspaceLeaf,
@@ -13,6 +12,7 @@ import {
 } from './constants';
 import type { DoomScrollViewState } from './types/feed';
 import { DoomScrollView } from './ui/doom-scroll-view';
+import { FolderPickerModal } from './ui/folder-picker-modal';
 import { SourcePickerModal } from './ui/source-picker-modal';
 
 export default class DoomScrollPlugin extends Plugin {
@@ -69,6 +69,11 @@ export default class DoomScrollPlugin extends Plugin {
 				return true;
 			},
 		});
+		this.addCommand({
+			id: 'open-folder-feed',
+			name: 'Open folder feed…',
+			callback: () => this.openFolderPicker(),
+		});
 
 		this.registerEvent(
 			this.app.workspace.on('file-menu', (menu, file, _source, leaf) => {
@@ -108,10 +113,16 @@ export default class DoomScrollPlugin extends Plugin {
 	private openPickerForActiveNote(): void {
 		const file = this.getActiveMarkdownFile();
 		if (!file) {
-			new Notice('Open a Markdown note before starting doom scroll.');
+			this.openFolderPicker();
 			return;
 		}
 		this.openSourcePicker(file);
+	}
+
+	private openFolderPicker(preferredLeaf?: WorkspaceLeaf): void {
+		new FolderPickerModal(this.app, (state) => {
+			void this.openFeed(state, preferredLeaf);
+		}).open();
 	}
 
 	private openSourcePicker(file: TFile, preferredLeaf?: WorkspaceLeaf): void {
