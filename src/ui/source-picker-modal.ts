@@ -1,5 +1,7 @@
 import { FuzzySuggestModal, type App, type TFile } from 'obsidian';
 import { getExactTags } from '../feed-sources/related-feed-source';
+import { isFileExcluded } from '../feed-sources/folder-exclusions';
+import type { ExcludedFolderRule } from '../settings';
 import type { DoomScrollViewState } from '../types/feed';
 import { FolderPickerModal } from './folder-picker-modal';
 
@@ -60,10 +62,13 @@ export class SourcePickerModal extends FuzzySuggestModal<SourcePickerChoice> {
 		app: App,
 		anchor: TFile,
 		private readonly onChoose: (state: DoomScrollViewState) => void,
+		private readonly excludedFolders: readonly ExcludedFolderRule[] = [],
 	) {
 		super(app);
 		this.items = [
-			...buildFeedSourceChoices(app, anchor),
+			...(isFileExcluded(anchor.path, excludedFolders)
+				? []
+				: buildFeedSourceChoices(app, anchor)),
 			{ label: 'Choose a folder…', action: 'choose-folder' },
 		];
 		this.setPlaceholder('Choose a doom scroll feed source…');
@@ -79,7 +84,11 @@ export class SourcePickerModal extends FuzzySuggestModal<SourcePickerChoice> {
 
 	onChooseItem(item: SourcePickerChoice): void {
 		if ('action' in item) {
-			new FolderPickerModal(this.app, this.onChoose).open();
+			new FolderPickerModal(
+				this.app,
+				this.onChoose,
+				this.excludedFolders,
+			).open();
 			return;
 		}
 		this.onChoose(item.state);

@@ -21,6 +21,7 @@ export class JunctionModal extends FuzzySuggestModal<JunctionAction> {
 		private readonly onOpenNormally: () => void,
 		private readonly onStartFeed: (state: DoomScrollViewState) => void,
 		customActions: JunctionCustomAction[] = [],
+		includeFeedChoices = true,
 	) {
 		super(app);
 		this.items = [
@@ -30,11 +31,13 @@ export class JunctionModal extends FuzzySuggestModal<JunctionAction> {
 				label: action.label,
 				run: action.run,
 			})),
-			...buildFeedSourceChoices(app, linkedFile).map((choice) => ({
-				kind: 'feed' as const,
-				label: `Doom scroll: ${choice.label}`,
-				state: choice.state,
-			})),
+			...(includeFeedChoices
+				? buildFeedSourceChoices(app, linkedFile).map((choice) => ({
+						kind: 'feed' as const,
+						label: `Doom scroll: ${choice.label}`,
+						state: choice.state,
+					}))
+				: []),
 		];
 		this.setPlaceholder('Choose what to do with this link…');
 	}

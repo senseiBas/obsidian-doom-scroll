@@ -1,45 +1,30 @@
 import {
 	FuzzySuggestModal,
 	Notice,
-	TFolder,
 	type App,
 	type TFile,
+	type TFolder,
 } from 'obsidian';
 import { orderFolderFiles } from '../feed-sources/folder-order';
+import { isFileExcluded } from '../feed-sources/folder-exclusions';
+import type { ExcludedFolderRule } from '../settings';
 import type { FolderFeedState } from '../types/feed';
+import { FolderSuggestModal } from './folder-suggest-modal';
 
 type FolderScopeChoice = {
 	label: string;
 	state: FolderFeedState;
 };
 
-export class FolderPickerModal extends FuzzySuggestModal<TFolder> {
+export class FolderPickerModal extends FolderSuggestModal {
 	constructor(
 		app: App,
-		private readonly onChoose: (state: FolderFeedState) => void,
+		onChoose: (state: FolderFeedState) => void,
+		excludedFolders: readonly ExcludedFolderRule[] = [],
 	) {
-		super(app);
-		this.setPlaceholder('Choose a folder for doom scroll…');
-	}
-
-	getItems(): TFolder[] {
-		return this.app.vault
-			.getAllLoadedFiles()
-			.filter((file): file is TFolder => file instanceof TFolder)
-			.sort((left, right) =>
-				left.path.localeCompare(right.path, 'en', {
-					numeric: true,
-					sensitivity: 'base',
-				}),
-			);
-	}
-
-	getItemText(folder: TFolder): string {
-		return folder.isRoot() ? 'Vault root' : folder.path;
-	}
-
-	onChooseItem(folder: TFolder): void {
-		openFolderScopePicker(this.app, folder, this.onChoose);
+		super(app, 'Choose a folder for doom scroll…', (folder) => {
+			openFolderScopePicker(app, folder, onChoose, excludedFolders);
+		});
 	}
 }
 
@@ -47,10 +32,15 @@ export function openFolderScopePicker(
 	app: App,
 	folder: TFolder,
 	onChoose: (state: FolderFeedState) => void,
+	excludedFolders: readonly ExcludedFolderRule[] = [],
 ): void {
-	const choices = buildFolderScopeChoices(app, folder.path);
+	const choices = buildFolderScopeChoices(
+		app,
+		folder.path,
+		excludedFolders,
+	);
 	if (choices.length === 0) {
-		new Notice('This folder contains no Markdown notes.');
+		new Notice('This folder contains no included Markdown notes.');
 		return;
 	}
 	new FolderScopeModal(app, choices, onChoose).open();
@@ -82,11 +72,12 @@ class FolderScopeModal extends FuzzySuggestModal<FolderScopeChoice> {
 function buildFolderScopeChoices(
 	app: App,
 	folderPath: string,
+	excludedFolders: readonly ExcludedFolderRule[],
 ): FolderScopeChoice[] {
 	const files = app.vault.getMarkdownFiles();
 	return [
-		buildFolderScopeChoice(files, folderPath, false),
-		buildFolderScopeChoice(files, folderPath, true),
+		buildFolderScopeChoice(files, folderPath, false, excludedFolders),
+		buildFolderScopeChoice(files, folderPath, true, excludedFolders),
 	].filter((choice): choice is FolderScopeChoice => choice !== null);
 }
 
@@ -94,8 +85,11 @@ function buildFolderScopeChoice(
 	files: readonly TFile[],
 	folderPath: string,
 	recursive: boolean,
+	excludedFolders: readonly ExcludedFolderRule[],
 ): FolderScopeChoice | null {
-	const orderedFiles = orderFolderFiles(files, folderPath, recursive);
+	const orderedFiles = orderFolderFiles(files, folderPath, recursive).filter(
+		(file) => !isFileExcluded(file.path, excludedFolders),
+	);
 	const anchor = orderedFiles[0];
 	if (!anchor) {
 		return null;

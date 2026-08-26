@@ -8,6 +8,8 @@ import {
 	type WorkspaceLeaf,
 } from 'obsidian';
 import type { BaseContextRegistry } from '../bases/base-context-registry';
+import type { ExcludedFolderRule } from '../settings';
+import { isFileExcluded } from '../feed-sources/folder-exclusions';
 import { DOOM_SCROLL_VIEW_TYPE } from '../constants';
 import {
 	openFileForEditing,
@@ -23,6 +25,7 @@ import {
 	type DoomScrollViewState,
 } from '../types/feed';
 import { JunctionModal } from './junction-modal';
+import { TagJunctionModal } from './tag-junction-modal';
 import { VirtualFeed } from './virtual-feed';
 
 export class DoomScrollView extends ItemView {
@@ -34,6 +37,7 @@ export class DoomScrollView extends ItemView {
 	constructor(
 		leaf: WorkspaceLeaf,
 		private readonly baseContexts: BaseContextRegistry,
+		private readonly getExcludedFolders: () => readonly ExcludedFolderRule[],
 	) {
 		super(leaf);
 		this.navigation = true;
@@ -95,6 +99,7 @@ export class DoomScrollView extends ItemView {
 			this.app,
 			this.state,
 			this.baseContexts,
+			this.getExcludedFolders(),
 		);
 		const anchor = resolved?.files[resolved.anchorIndex];
 		if (!anchor) {
@@ -146,7 +151,12 @@ export class DoomScrollView extends ItemView {
 			return;
 		}
 
-		const resolved = resolveFeed(this.app, this.state, this.baseContexts);
+		const resolved = resolveFeed(
+			this.app,
+			this.state,
+			this.baseContexts,
+			this.getExcludedFolders(),
+		);
 		if (!resolved) {
 			this.renderEmptyState('The anchor note is no longer available.');
 			new Notice('Doom scroll anchor note is no longer available.');
@@ -170,6 +180,9 @@ export class DoomScrollView extends ItemView {
 			initialScrollTop: this.history?.current.scrollTop ?? undefined,
 			onInternalLink: (sourceFile, linkText) => {
 				this.openJunction(sourceFile, linkText);
+			},
+			onTagLink: (sourceFile, tag, openNormally) => {
+				this.openTagJunction(sourceFile, tag, openNormally);
 			},
 			onEditNote: (file) => {
 				void openFileForEditing(this.leaf, file);
@@ -228,10 +241,44 @@ export class DoomScrollView extends ItemView {
 				);
 			},
 			(state) => this.navigateTo(state),
+			[],
+			!isFileExcluded(linkedFile.path, this.getExcludedFolders()),
+		).open();
+	}
+
+	refreshForSettings(): void {
+		if (this.opened) {
+			this.rerenderPreservingScroll();
+		}
+	}
+
+	private openTagJunction(
+		sourceFile: TFile,
+		tag: string,
+		openNormally: () => void,
+	): void {
+		new TagJunctionModal(
+			this.app,
+			tag,
+			openNormally,
+			() => {
+				this.navigateTo({
+					source: 'tag',
+					anchorPath: sourceFile.path,
+					tag,
+				});
+			},
 		).open();
 	}
 
 	navigateTo(state: DoomScrollViewState): void {
+		if (
+			state.source !== 'base' &&
+			isFileExcluded(state.anchorPath, this.getExcludedFolders())
+		) {
+			new Notice('This note is inside an excluded folder.');
+			return;
+		}
 		const scrollTop = this.feedComponent?.getScrollTop() ?? 0;
 		if (this.history) {
 			this.state = this.history.navigate(state, scrollTop).context;

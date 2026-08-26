@@ -7,16 +7,19 @@ import {
 	type TFile,
 } from 'obsidian';
 import { DOOM_SCROLL_BASES_VIEW_TYPE } from '../constants';
+import { isFileExcluded } from '../feed-sources/folder-exclusions';
 import {
 	openFileForEditing,
 	openFileNormally,
 } from '../editor/open-for-editing';
 import { FeedHistory } from '../navigation/feed-history';
+import type { ExcludedFolderRule } from '../settings';
 import type {
 	BaseFeedState,
 	DoomScrollViewState,
 } from '../types/feed';
 import { JunctionModal } from '../ui/junction-modal';
+import { TagJunctionModal } from '../ui/tag-junction-modal';
 import { VirtualFeed } from '../ui/virtual-feed';
 import type { BaseContextRegistry } from './base-context-registry';
 
@@ -38,6 +41,7 @@ export class DoomScrollBasesView extends BasesView {
 		controller: QueryController,
 		containerEl: HTMLElement,
 		private readonly contexts: BaseContextRegistry,
+		private readonly getExcludedFolders: () => readonly ExcludedFolderRule[],
 		private readonly startFeedFromBase: StartFeedFromBase,
 	) {
 		super(controller);
@@ -109,6 +113,9 @@ export class DoomScrollBasesView extends BasesView {
 			initialScrollTop: this.history?.current.scrollTop ?? undefined,
 			onInternalLink: (sourceFile, linkText) => {
 				this.openJunction(sourceFile, linkText);
+			},
+			onTagLink: (sourceFile, tag, openNormally) => {
+				this.openTagJunction(sourceFile, tag, openNormally);
 			},
 			onEditNote: (file) => {
 				void openFileForEditing(this.app.workspace.getLeaf(false), file);
@@ -186,6 +193,34 @@ export class DoomScrollBasesView extends BasesView {
 				}
 			},
 			currentBaseAction,
+			!isFileExcluded(linkedFile.path, this.getExcludedFolders()),
+		).open();
+	}
+
+	private openTagJunction(
+		sourceFile: TFile,
+		tag: string,
+		openNormally: () => void,
+	): void {
+		const anchorAllowed = !isFileExcluded(
+			sourceFile.path,
+			this.getExcludedFolders(),
+		);
+		new TagJunctionModal(
+			this.app,
+			tag,
+			openNormally,
+			() => {
+				const baseState = this.getCurrentBaseState();
+				if (baseState) {
+					this.startFeedFromBase(baseState, {
+						source: 'tag',
+						anchorPath: sourceFile.path,
+						tag,
+					});
+				}
+			},
+			anchorAllowed,
 		).open();
 	}
 

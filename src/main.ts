@@ -1,5 +1,6 @@
 import {
 	MarkdownView,
+	Notice,
 	Plugin,
 	TFile,
 	TFolder,
@@ -11,21 +12,39 @@ import {
 	DOOM_SCROLL_BASES_VIEW_TYPE,
 	DOOM_SCROLL_VIEW_TYPE,
 } from './constants';
+import {
+	isFileExcluded,
+	removeDeletedFolderPaths,
+	renameExcludedFolderPaths,
+} from './feed-sources/folder-exclusions';
+import {
+	DEFAULT_SETTINGS,
+	normalizeSettings,
+	type DoomScrollSettings,
+} from './settings';
 import type { DoomScrollViewState } from './types/feed';
 import { DoomScrollView } from './ui/doom-scroll-view';
 import {
 	FolderPickerModal,
 	openFolderScopePicker,
 } from './ui/folder-picker-modal';
+import { DoomScrollSettingTab } from './ui/settings-tab';
 import { SourcePickerModal } from './ui/source-picker-modal';
 
 export default class DoomScrollPlugin extends Plugin {
 	private readonly baseContexts = new BaseContextRegistry();
+	settings: DoomScrollSettings = { ...DEFAULT_SETTINGS };
 
-	override onload(): void {
+	override async onload(): Promise<void> {
+		this.settings = normalizeSettings(await this.loadData());
 		this.registerView(
 			DOOM_SCROLL_VIEW_TYPE,
-			(leaf) => new DoomScrollView(leaf, this.baseContexts),
+			(leaf) =>
+				new DoomScrollView(
+					leaf,
+					this.baseContexts,
+					() => this.settings.excludedFolders,
+				),
 		);
 		this.registerBasesView(DOOM_SCROLL_BASES_VIEW_TYPE, {
 			name: 'Doom scroll',
@@ -35,6 +54,7 @@ export default class DoomScrollPlugin extends Plugin {
 					controller,
 					containerEl,
 					this.baseContexts,
+					() => this.settings.excludedFolders,
 					(baseState, nextState) => {
 						void this.openFeedFromBase(baseState, nextState);
 					},
@@ -59,6 +79,7 @@ export default class DoomScrollPlugin extends Plugin {
 				return true;
 			},
 		});
+		this.addSettingTab(new DoomScrollSettingTab(this.app, this));
 		this.addCommand({
 			id: 'exit-feed',
 			name: 'Exit feed to anchor note',
@@ -87,9 +108,14 @@ export default class DoomScrollPlugin extends Plugin {
 							.setTitle('Doom scroll folder…')
 							.setIcon('align-justify');
 						item.onClick(() => {
-							openFolderScopePicker(this.app, file, (state) => {
-								void this.openFeed(state, leaf);
-							});
+							openFolderScopePicker(
+								this.app,
+								file,
+								(state) => {
+									void this.openFeed(state, leaf);
+								},
+								this.settings.excludedFolders,
+							);
 						});
 					});
 					return;
@@ -121,10 +147,20 @@ export default class DoomScrollPlugin extends Plugin {
 				});
 			}),
 		);
+		this.registerExcludedFolderEvents();
 	}
 
 	override onunload(): void {
 		this.baseContexts.clear();
+	}
+
+	async saveSettings(): Promise<void> {
+		await this.saveData(this.settings);
+		this.app.workspace.iterateAllLeaves((leaf) => {
+			if (leaf.view instanceof DoomScrollView) {
+				leaf.view.refreshForSettings();
+			}
+		});
 	}
 
 	private openPickerForActiveNote(): void {
@@ -137,21 +173,37 @@ export default class DoomScrollPlugin extends Plugin {
 	}
 
 	private openFolderPicker(preferredLeaf?: WorkspaceLeaf): void {
-		new FolderPickerModal(this.app, (state) => {
-			void this.openFeed(state, preferredLeaf);
-		}).open();
+		new FolderPickerModal(
+			this.app,
+			(state) => {
+				void this.openFeed(state, preferredLeaf);
+			},
+			this.settings.excludedFolders,
+		).open();
 	}
 
 	private openSourcePicker(file: TFile, preferredLeaf?: WorkspaceLeaf): void {
-		new SourcePickerModal(this.app, file, (state) => {
-			void this.openFeed(state, preferredLeaf);
-		}).open();
+		new SourcePickerModal(
+			this.app,
+			file,
+			(state) => {
+				void this.openFeed(state, preferredLeaf);
+			},
+			this.settings.excludedFolders,
+		).open();
 	}
 
 	private async openFeed(
 		state: DoomScrollViewState,
 		preferredLeaf?: WorkspaceLeaf,
 	): Promise<void> {
+		if (
+			state.source !== 'base' &&
+			isFileExcluded(state.anchorPath, this.settings.excludedFolders)
+		) {
+			new Notice('This note is inside an excluded folder.');
+			return;
+		}
 		const activeMarkdownView =
 			this.app.workspace.getActiveViewOfType(MarkdownView);
 		const targetLeaf =
@@ -171,6 +223,16 @@ export default class DoomScrollPlugin extends Plugin {
 		baseState: DoomScrollViewState,
 		nextState: DoomScrollViewState,
 	): Promise<void> {
+		if (
+			nextState.source !== 'base' &&
+			isFileExcluded(
+				nextState.anchorPath,
+				this.settings.excludedFolders,
+			)
+		) {
+			new Notice('This note is inside an excluded folder.');
+			return;
+		}
 		const targetLeaf = this.app.workspace.getLeaf(false);
 		await targetLeaf.setViewState({
 			type: DOOM_SCROLL_VIEW_TYPE,
@@ -186,5 +248,46 @@ export default class DoomScrollPlugin extends Plugin {
 	private getActiveMarkdownFile(): TFile | null {
 		const file = this.app.workspace.getActiveFile();
 		return file?.extension === 'md' ? file : null;
+	}
+
+	private registerExcludedFolderEvents(): void {
+		this.registerEvent(
+			this.app.vault.on('rename', (file, oldPath) => {
+				if (file instanceof TFolder) {
+					const previousRules = this.settings.excludedFolders;
+					const renamedRules = renameExcludedFolderPaths(
+						this.settings.excludedFolders,
+						oldPath,
+						file.path,
+					);
+					if (
+						renamedRules.some(
+							(rule, index) =>
+								rule.path !== previousRules[index]?.path,
+						)
+					) {
+						this.settings.excludedFolders = renamedRules;
+						void this.saveSettings();
+					}
+				}
+			}),
+		);
+		this.registerEvent(
+			this.app.vault.on('delete', (file) => {
+				if (file instanceof TFolder) {
+					const remainingRules = removeDeletedFolderPaths(
+						this.settings.excludedFolders,
+						file.path,
+					);
+					if (
+						remainingRules.length !==
+						this.settings.excludedFolders.length
+					) {
+						this.settings.excludedFolders = remainingRules;
+						void this.saveSettings();
+					}
+				}
+			}),
+		);
 	}
 }

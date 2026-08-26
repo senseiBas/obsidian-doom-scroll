@@ -68,6 +68,20 @@ listeners.
 Internal links are intercepted only inside rendered feed notes. The junction
 menu can open the destination normally or branch to a new feed. Feed contexts
 and scroll positions are kept in memory for Back and Forward navigation.
+Rendered tags use a similar junction: open the tag through Obsidian normally or
+start an exact-tag Doom Scroll feed.
+
+## Excluded folders
+
+Open **Settings → Community plugins → Obsidian Doom Scroll** to exclude noisy
+folders such as chat histories, generated notes, or templates. Every excluded
+folder has its own **Also exclude subfolders** toggle and can be removed without
+affecting vault files.
+
+Exclusions apply to folder, tag, outgoing-link, and backlink feeds. They are not
+applied to the custom Bases layout because a Base's visible filters, sorting,
+and limits remain authoritative. Settings are stored locally in Obsidian's
+normal plugin data and no note or Base file is modified.
 
 ## Mobile behavior and local deployment
 
