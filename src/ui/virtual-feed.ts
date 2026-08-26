@@ -14,6 +14,7 @@ type VirtualFeedOptions = {
 	parentEl: HTMLElement;
 	files: readonly TFile[];
 	anchorIndex: number;
+	highlightText?: string;
 	initialScrollTop?: number;
 	onInternalLink: (sourceFile: TFile, linkText: string) => void;
 	onTagLink: (
@@ -155,6 +156,7 @@ export class VirtualFeed extends Component {
 			app: this.options.app,
 			file,
 			parentEl: this.itemsEl,
+			highlightText: this.options.highlightText,
 			onHeightChanged: (height) => {
 				this.recordHeight(index, file.path, height);
 			},

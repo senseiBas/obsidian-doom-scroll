@@ -23,11 +23,19 @@ export type BaseFeedState = {
 	label: string;
 };
 
+export type TextSearchFeedState = {
+	source: 'text';
+	anchorPath: string;
+	contextId: string;
+	query: string;
+};
+
 export type DoomScrollViewState =
 	| FolderFeedState
 	| LinkFeedState
 	| TagFeedState
-	| BaseFeedState;
+	| BaseFeedState
+	| TextSearchFeedState;
 
 export type ResolvedFeed = {
 	files: TFile[];
@@ -60,6 +68,13 @@ export function isDoomScrollViewState(
 				typeof candidate.contextId === 'string' &&
 				candidate.contextId.length > 0 &&
 				typeof candidate.label === 'string'
+			);
+		case 'text':
+			return (
+				typeof candidate.contextId === 'string' &&
+				candidate.contextId.length > 0 &&
+				typeof candidate.query === 'string' &&
+				candidate.query.length > 0
 			);
 		default:
 			return false;

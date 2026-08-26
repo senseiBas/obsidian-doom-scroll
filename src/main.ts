@@ -18,6 +18,10 @@ import {
 	removeDeletedFolderPaths,
 	renameExcludedFolderPaths,
 } from './feed-sources/folder-exclusions';
+import { orderVaultFilesNaturally } from './feed-sources/folder-order';
+import { TextSearchContextRegistry } from './search/text-search-context-registry';
+import { TextSearchIndex } from './search/text-search-index';
+import { normalizeSearchQuery } from './search/text-match';
 import {
 	DEFAULT_SETTINGS,
 	normalizeSettings,
@@ -34,6 +38,8 @@ import { SourcePickerModal } from './ui/source-picker-modal';
 
 export default class DoomScrollPlugin extends Plugin {
 	private readonly baseContexts = new BaseContextRegistry();
+	private readonly textSearchContexts = new TextSearchContextRegistry();
+	private readonly textSearchIndex = new TextSearchIndex(this.app);
 	settings: DoomScrollSettings = { ...DEFAULT_SETTINGS };
 
 	override async onload(): Promise<void> {
@@ -48,6 +54,7 @@ export default class DoomScrollPlugin extends Plugin {
 				new DoomScrollView(
 					leaf,
 					this.baseContexts,
+					this.textSearchContexts,
 					() => this.settings.excludedFolders,
 				),
 		);
@@ -104,6 +111,29 @@ export default class DoomScrollPlugin extends Plugin {
 			name: 'Open folder feed…',
 			callback: () => this.openFolderPicker(),
 		});
+		this.addCommand({
+			id: 'open-selection-text-feed',
+			name: 'Open feed for selected text',
+			editorCheckCallback: (checking, editor, info) => {
+				const query = normalizeSearchQuery(editor.getSelection());
+				const { file } = info;
+				if (
+					!query ||
+					!file ||
+					isFileExcluded(file.path, this.settings.excludedFolders)
+				) {
+					return false;
+				}
+				if (!checking) {
+					void this.openTextSearchFeed(
+						query,
+						file,
+						info instanceof MarkdownView ? info.leaf : undefined,
+					);
+				}
+				return true;
+			},
+		});
 
 		this.registerEvent(
 			this.app.workspace.on('file-menu', (menu, file, _source, leaf) => {
@@ -136,7 +166,7 @@ export default class DoomScrollPlugin extends Plugin {
 		);
 
 		this.registerEvent(
-			this.app.workspace.on('editor-menu', (menu, _editor, info) => {
+			this.app.workspace.on('editor-menu', (menu, editor, info) => {
 				const { file } = info;
 				if (!file || file.extension !== 'md') {
 					return;
@@ -150,6 +180,26 @@ export default class DoomScrollPlugin extends Plugin {
 						),
 					);
 				});
+				const query = normalizeSearchQuery(editor.getSelection());
+				if (
+					query &&
+					!isFileExcluded(file.path, this.settings.excludedFolders)
+				) {
+					menu.addItem((item) => {
+						item
+							.setTitle(formatTextSearchMenuTitle(query))
+							.setIcon('text-search');
+						item.onClick(() => {
+							void this.openTextSearchFeed(
+								query,
+								file,
+								info instanceof MarkdownView
+									? info.leaf
+									: undefined,
+							);
+						});
+					});
+				}
 			}),
 		);
 		this.registerExcludedFolderEvents();
@@ -157,6 +207,8 @@ export default class DoomScrollPlugin extends Plugin {
 
 	override onunload(): void {
 		this.baseContexts.clear();
+		this.textSearchContexts.clear();
+		this.textSearchIndex.clear();
 	}
 
 	async saveSettings(): Promise<void> {
@@ -222,6 +274,43 @@ export default class DoomScrollPlugin extends Plugin {
 			state,
 		});
 		await this.app.workspace.revealLeaf(targetLeaf);
+	}
+
+	private async openTextSearchFeed(
+		query: string,
+		anchor: TFile,
+		preferredLeaf?: WorkspaceLeaf,
+	): Promise<void> {
+		if (isFileExcluded(anchor.path, this.settings.excludedFolders)) {
+			new Notice('This note is inside an excluded folder.');
+			return;
+		}
+
+		const progress = new Notice(`Searching for “${query}”…`, 0);
+		try {
+			const matchingFiles = await this.textSearchIndex.search(
+				query,
+				this.settings.excludedFolders,
+			);
+			const files = orderVaultFilesNaturally(
+				matchingFiles.some((file) => file.path === anchor.path)
+					? matchingFiles
+					: [...matchingFiles, anchor],
+			);
+			const state = this.textSearchContexts.create(
+				query,
+				files.map((file) => file.path),
+				anchor.path,
+			);
+			await this.openFeed(state, preferredLeaf);
+			new Notice(
+				`${files.length} matching ${files.length === 1 ? 'note' : 'notes'}.`,
+			);
+		} catch {
+			new Notice('Doom Scroll could not search this vault.');
+		} finally {
+			progress.hide();
+		}
 	}
 
 	private async openFeedFromBase(
@@ -295,4 +384,9 @@ export default class DoomScrollPlugin extends Plugin {
 			}),
 		);
 	}
+}
+
+function formatTextSearchMenuTitle(query: string): string {
+	const label = query.length > 48 ? `${query.slice(0, 47)}…` : query;
+	return `Doom scroll notes containing “${label}”`;
 }

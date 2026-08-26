@@ -12,12 +12,14 @@ import {
 } from 'obsidian';
 import { DOOM_SCROLL_HOVER_SOURCE } from '../constants';
 import { normalizeRenderedTag } from '../feed-sources/tag-link';
+import { highlightRenderedText } from '../search/highlight-rendered-text';
 import { QuickEditPanel } from './quick-edit-panel';
 
 type NoteCardOptions = {
 	app: App;
 	file: TFile;
 	parentEl: HTMLElement;
+	highlightText?: string;
 	onHeightChanged: (height: number) => void;
 	onInternalLink: (sourceFile: TFile, linkText: string) => void;
 	onTagLink: (
@@ -60,10 +62,11 @@ export class NoteCard extends Component implements HoverParent {
 	override onload(): void {
 		this.active = true;
 		const headerEl = this.containerEl.createDiv('doom-scroll-note-header');
-		headerEl.createDiv({
+		const titleEl = headerEl.createDiv({
 			cls: 'doom-scroll-note-title',
 			text: this.options.file.basename,
 		});
+		highlightRenderedText(titleEl, this.options.highlightText);
 
 		const actionsEl = headerEl.createDiv('doom-scroll-note-actions');
 		new ButtonComponent(actionsEl)
@@ -289,6 +292,7 @@ export class NoteCard extends Component implements HoverParent {
 				this.options.file.path,
 				renderComponent,
 			);
+			highlightRenderedText(markdownEl, this.options.highlightText);
 		} catch {
 			if (this.active && this.previewComponent === renderComponent) {
 				markdownEl.setText('This note could not be rendered.');
