@@ -2,6 +2,7 @@ import {
 	MarkdownView,
 	Plugin,
 	TFile,
+	TFolder,
 	type WorkspaceLeaf,
 } from 'obsidian';
 import { BaseContextRegistry } from './bases/base-context-registry';
@@ -12,7 +13,10 @@ import {
 } from './constants';
 import type { DoomScrollViewState } from './types/feed';
 import { DoomScrollView } from './ui/doom-scroll-view';
-import { FolderPickerModal } from './ui/folder-picker-modal';
+import {
+	FolderPickerModal,
+	openFolderScopePicker,
+} from './ui/folder-picker-modal';
 import { SourcePickerModal } from './ui/source-picker-modal';
 
 export default class DoomScrollPlugin extends Plugin {
@@ -77,6 +81,19 @@ export default class DoomScrollPlugin extends Plugin {
 
 		this.registerEvent(
 			this.app.workspace.on('file-menu', (menu, file, _source, leaf) => {
+				if (file instanceof TFolder) {
+					menu.addItem((item) => {
+						item
+							.setTitle('Doom scroll folder…')
+							.setIcon('align-justify');
+						item.onClick(() => {
+							openFolderScopePicker(this.app, file, (state) => {
+								void this.openFeed(state, leaf);
+							});
+						});
+					});
+					return;
+				}
 				if (!(file instanceof TFile) || file.extension !== 'md') {
 					return;
 				}

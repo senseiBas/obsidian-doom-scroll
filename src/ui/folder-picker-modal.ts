@@ -39,13 +39,21 @@ export class FolderPickerModal extends FuzzySuggestModal<TFolder> {
 	}
 
 	onChooseItem(folder: TFolder): void {
-		const choices = buildFolderScopeChoices(this.app, folder.path);
-		if (choices.length === 0) {
-			new Notice('This folder contains no Markdown notes.');
-			return;
-		}
-		new FolderScopeModal(this.app, choices, this.onChoose).open();
+		openFolderScopePicker(this.app, folder, this.onChoose);
 	}
+}
+
+export function openFolderScopePicker(
+	app: App,
+	folder: TFolder,
+	onChoose: (state: FolderFeedState) => void,
+): void {
+	const choices = buildFolderScopeChoices(app, folder.path);
+	if (choices.length === 0) {
+		new Notice('This folder contains no Markdown notes.');
+		return;
+	}
+	new FolderScopeModal(app, choices, onChoose).open();
 }
 
 class FolderScopeModal extends FuzzySuggestModal<FolderScopeChoice> {
