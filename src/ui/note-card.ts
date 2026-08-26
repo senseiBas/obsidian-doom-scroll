@@ -26,7 +26,11 @@ export class NoteCard extends Component {
 		super();
 		this.containerEl = options.parentEl.createDiv({
 			cls: 'doom-scroll-note',
-			attr: { 'data-path': options.file.path },
+			attr: {
+				role: 'article',
+				'aria-label': options.file.basename,
+				'data-path': options.file.path,
+			},
 		});
 	}
 

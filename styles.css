@@ -140,6 +140,19 @@
 }
 
 @media (max-width: 480px) {
+	.doom-scroll-toolbar {
+		flex-wrap: wrap;
+	}
+
+	.doom-scroll-source-label {
+		order: -1;
+		flex-basis: 100%;
+	}
+
+	.doom-scroll-history-actions {
+		flex: 1 1 auto;
+	}
+
 	.doom-scroll-note-header {
 		align-items: flex-start;
 		flex-direction: column;
