@@ -42,6 +42,8 @@ Obsidian Doom Scroll is a community plugin for browsing a vault as a continuous,
   Edit shows the raw Markdown inside the card with **Save**, **Cancel**, and
   **Save & open full editor** actions. On mobile, the edit action opens
   Obsidian's normal editor.
+- Ctrl+click **Open** (Cmd+click on macOS) to collect a note in a new background
+  tab without leaving the feed or moving its scroll position.
 
 ## Using a Base as a feed
 

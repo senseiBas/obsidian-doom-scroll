@@ -27,6 +27,9 @@ Run `npm run check` before starting. Obsidian should load `main.js`,
 8. Use **Open**, the global **Exit feed** button, and the **Exit feed to anchor
    note** command. Exiting should open the exact note in source mode with focus
    and the cursor at the end.
+   Ctrl+click **Open** on several cards (Cmd+click on macOS). Confirm every note
+   appears in its own background tab while Doom Scroll keeps focus and its exact
+   scroll position. Repeat in a Base feed.
 9. Rename and delete both anchor and non-anchor files while a feed is open.
    Confirm the feed refreshes or shows a clear unavailable-anchor message.
 10. Open a Base containing filtered, sorted, and limited views. Select the
