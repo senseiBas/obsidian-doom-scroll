@@ -32,6 +32,9 @@ Obsidian Doom Scroll is a community plugin for browsing a vault as a continuous,
 - Use **Doom scroll…** from a Markdown file's context menu.
 - Choose Folder, Folder + subfolders, Outgoing links, Backlinks, or one exact
   tag from the source picker.
+- Choose **Choose a folder…** from that picker, or run **Doom scroll: Open
+  folder feed…**, to browse any vault folder. Select whether subfolders should
+  be included; the first note in natural filename order becomes the anchor.
 - Use **Doom scroll: Exit feed to anchor note** or the visible **Exit feed**
   button to return to the anchor in source mode, focused at the end of the note.
 - Each rendered note also has **Open** and **Edit / exit here** actions.

@@ -72,7 +72,20 @@ export function orderFolderFeed<TFile extends VaultFileDescriptor>(
 	}
 
 	const folderPath = getParentPath(anchor.path);
-	const orderedFiles = files
+	const orderedFiles = orderFolderFiles(files, folderPath, recursive);
+
+	return {
+		files: orderedFiles,
+		anchorIndex: orderedFiles.findIndex((file) => file.path === anchorPath),
+	};
+}
+
+export function orderFolderFiles<TFile extends VaultFileDescriptor>(
+	files: readonly TFile[],
+	folderPath: string,
+	recursive: boolean,
+): TFile[] {
+	return files
 		.filter(
 			(file) =>
 				file.extension.toLocaleLowerCase() === 'md' &&
@@ -80,9 +93,4 @@ export function orderFolderFeed<TFile extends VaultFileDescriptor>(
 		)
 		.slice()
 		.sort(compareVaultFilesNaturally);
-
-	return {
-		files: orderedFiles,
-		anchorIndex: orderedFiles.findIndex((file) => file.path === anchorPath),
-	};
 }

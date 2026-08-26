@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	orderFolderFeed,
+	orderFolderFiles,
 	type VaultFileDescriptor,
 } from '../src/feed-sources/folder-order';
 
@@ -53,5 +54,25 @@ describe('orderFolderFeed', () => {
 	it('returns an empty result when the anchor no longer exists', () => {
 		const result = orderFolderFeed([file('Existing.md')], 'Missing.md', false);
 		expect(result).toEqual({ files: [], anchorIndex: -1 });
+	});
+
+	it('selects an arbitrary folder without requiring an existing anchor', () => {
+		const files = [
+			file('chosen/10 Note.md'),
+			file('chosen/2 Note.md'),
+			file('chosen/nested/Child.md'),
+			file('other/Outside.md'),
+		];
+
+		expect(
+			orderFolderFiles(files, 'chosen', false).map((item) => item.path),
+		).toEqual(['chosen/2 Note.md', 'chosen/10 Note.md']);
+		expect(
+			orderFolderFiles(files, 'chosen', true).map((item) => item.path),
+		).toEqual([
+			'chosen/2 Note.md',
+			'chosen/10 Note.md',
+			'chosen/nested/Child.md',
+		]);
 	});
 });
