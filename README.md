@@ -72,7 +72,8 @@ Internal links are intercepted only inside rendered feed notes. The junction
 menu can open the destination normally or branch to a new feed. Feed contexts
 and scroll positions are kept in memory for Back and Forward navigation.
 Rendered tags use a similar junction: open the tag through Obsidian normally or
-start an exact-tag Doom Scroll feed.
+start an exact-tag Doom Scroll feed. Internal links also emit Obsidian's native
+Page preview event, respecting its configured modifier-key behavior.
 
 Desktop Quick Edit uses Obsidian's textarea component and Vault API. It keeps
 the card mounted and the feed stationary while editing, permits only one open

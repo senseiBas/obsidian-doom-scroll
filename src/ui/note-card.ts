@@ -5,8 +5,11 @@ import {
 	Notice,
 	Platform,
 	type App,
+	type HoverParent,
+	type HoverPopover,
 	type TFile,
 } from 'obsidian';
+import { DOOM_SCROLL_HOVER_SOURCE } from '../constants';
 import { normalizeRenderedTag } from '../feed-sources/tag-link';
 import { QuickEditPanel } from './quick-edit-panel';
 
@@ -27,8 +30,9 @@ type NoteCardOptions = {
 	onQuickEditEnd: () => void;
 };
 
-export class NoteCard extends Component {
+export class NoteCard extends Component implements HoverParent {
 	readonly containerEl: HTMLElement;
+	hoverPopover: HoverPopover | null = null;
 
 	private active = false;
 	private resizeObserver: ResizeObserver | null = null;
@@ -85,6 +89,38 @@ export class NoteCard extends Component {
 		this.markdownEl = this.containerEl.createDiv({
 			cls: ['doom-scroll-note-content', 'markdown-rendered'],
 		});
+		this.registerDomEvent(
+			this.markdownEl,
+			'mouseover',
+			(event) => {
+				const target = event.target as Element | null;
+				const linkEl = target?.closest?.(
+					'a.internal-link',
+				) as HTMLElement | null;
+				if (!linkEl || !this.markdownEl?.contains(linkEl)) {
+					return;
+				}
+				const relatedTarget = event.relatedTarget as Node | null;
+				if (relatedTarget && linkEl.contains(relatedTarget)) {
+					return;
+				}
+				const linkText =
+					linkEl.getAttribute('data-href') ??
+					linkEl.getAttribute('href');
+				if (!linkText) {
+					return;
+				}
+
+				this.options.app.workspace.trigger('hover-link', {
+					event,
+					source: DOOM_SCROLL_HOVER_SOURCE,
+					hoverParent: this,
+					targetEl: linkEl,
+					linktext: linkText,
+					sourcePath: this.options.file.path,
+				});
+			},
+		);
 		this.registerDomEvent(
 			this.markdownEl,
 			'click',
@@ -154,6 +190,7 @@ export class NoteCard extends Component {
 		this.editButton = null;
 		this.previewComponent = null;
 		this.quickEditor = null;
+		this.hoverPopover = null;
 		this.containerEl.remove();
 	}
 

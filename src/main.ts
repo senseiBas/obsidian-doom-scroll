@@ -10,6 +10,7 @@ import { BaseContextRegistry } from './bases/base-context-registry';
 import { DoomScrollBasesView } from './bases/doom-scroll-bases-view';
 import {
 	DOOM_SCROLL_BASES_VIEW_TYPE,
+	DOOM_SCROLL_HOVER_SOURCE,
 	DOOM_SCROLL_VIEW_TYPE,
 } from './constants';
 import {
@@ -37,6 +38,10 @@ export default class DoomScrollPlugin extends Plugin {
 
 	override async onload(): Promise<void> {
 		this.settings = normalizeSettings(await this.loadData());
+		this.registerHoverLinkSource(DOOM_SCROLL_HOVER_SOURCE, {
+			display: 'Obsidian Doom Scroll',
+			defaultMod: true,
+		});
 		this.registerView(
 			DOOM_SCROLL_VIEW_TYPE,
 			(leaf) =>
