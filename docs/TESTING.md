@@ -57,6 +57,18 @@ Run `npm run check` before starting. Obsidian should load `main.js`,
     then try to save the Quick Edit draft. Confirm a conflict notice appears,
     the newer file is not overwritten, and the draft remains available in the
     textarea.
+18. Select `performance` in a Markdown editor. Start **Doom scroll notes
+    containing “performance”** from the editor context menu and repeat through
+    the command palette. Confirm filename and content matches are included
+    case-insensitively, excluded folders stay absent, and the source note is the
+    initial anchor.
+19. Confirm every visible occurrence in rendered text and card titles is
+    highlighted. Follow links, use Back/Forward, Quick Edit a result, and
+    Ctrl+click several **Open** buttons; the text-search feed and highlighting
+    should remain intact when returning.
+20. Repeat the same search. Confirm it finishes faster from the in-memory cache,
+    then modify one matching and one non-matching note and verify a new search
+    reflects both changes.
 
 ## Android
 
@@ -73,6 +85,9 @@ Run `npm run check` before starting. Obsidian should load `main.js`,
    exact note with the cursor at its end and the keyboard ready for input.
 7. Background and resume Obsidian while a feed is open, then repeat a long
    scroll to check for blank cards, jumps, or crashes.
+8. Select text in the mobile editor, run **Doom scroll: Open feed for selected
+   text** from the command palette, and confirm matching notes and highlights
+   appear without a crash or long UI freeze.
 
 Record the Obsidian version, Android version, vault size, feed source, and exact
 reproduction steps for every issue.

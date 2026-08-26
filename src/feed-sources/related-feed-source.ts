@@ -103,5 +103,7 @@ export function describeFeedSource(state: DoomScrollViewState): string {
 			return `Tag ${state.tag}`;
 		case 'base':
 			return `Base: ${state.label}`;
+		case 'text':
+			return `Text: “${state.query}”`;
 	}
 }

@@ -129,6 +129,13 @@
 	margin-bottom: 0;
 }
 
+.doom-scroll-search-match {
+	padding: 0 0.08em;
+	border-radius: var(--radius-s);
+	background: var(--text-highlight-bg);
+	color: inherit;
+}
+
 .doom-scroll-quick-edit {
 	display: flex;
 	flex-direction: column;

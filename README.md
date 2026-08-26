@@ -18,6 +18,7 @@ Obsidian Doom Scroll is a community plugin for browsing a vault as a continuous,
 
 - Folder feeds, with optional subfolders and an anchor note.
 - Outgoing-link, backlink, and exact-tag feeds.
+- Exact, case-insensitive text-search feeds started from an editor selection.
 - A custom Bases view that preserves the supplied filters, sorting, and limits.
 - Virtualized, bidirectional scrolling through full rendered notes.
 - Native actions to open a note, plus an inline desktop Quick Edit mode.
@@ -44,6 +45,10 @@ Obsidian Doom Scroll is a community plugin for browsing a vault as a continuous,
   Obsidian's normal editor.
 - Ctrl+click **Open** (Cmd+click on macOS) to collect a note in a new background
   tab without leaving the feed or moving its scroll position.
+- Select text in a Markdown editor, then use its context menu or **Doom scroll:
+  Open feed for selected text**. Matching filenames and Markdown contents are
+  shown in natural order with visible match highlighting. The current note is
+  the anchor.
 
 ## Using a Base as a feed
 
@@ -83,6 +88,12 @@ editor, and writes only after an explicit save. If the note changed elsewhere
 after Quick Edit opened, the save is refused instead of overwriting that newer
 content.
 
+Text search is exact and case-insensitive. Whitespace in a multi-line selection
+is normalized, so a selection such as `performance testing` can also match a
+line break between those words. Searches run locally with bounded concurrent
+Vault reads. Unchanged note text is cached only in memory, making subsequent
+searches faster without creating an index file.
+
 ## Excluded folders
 
 Open **Settings → Community plugins → Obsidian Doom Scroll** to exclude noisy
@@ -115,6 +126,8 @@ artifacts are `main.js`, `manifest.json`, and `styles.css` in that directory.
   rendered in version 0.1.0.
 - Feed history and Base snapshots are deliberately in memory only and are not
   restored after restarting Obsidian.
+- Text-search results are an in-memory snapshot. Run the selection search again
+  to include notes that started matching after the feed was created.
 - Interactive verification must be performed separately on desktop and mobile;
   automated checks cover source ordering, context history, type safety, linting,
   and production bundling.

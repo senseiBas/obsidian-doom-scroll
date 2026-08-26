@@ -8,6 +8,7 @@ import {
 	type WorkspaceLeaf,
 } from 'obsidian';
 import type { BaseContextRegistry } from '../bases/base-context-registry';
+import type { TextSearchContextRegistry } from '../search/text-search-context-registry';
 import type { ExcludedFolderRule } from '../settings';
 import { isFileExcluded } from '../feed-sources/folder-exclusions';
 import { DOOM_SCROLL_VIEW_TYPE } from '../constants';
@@ -40,6 +41,7 @@ export class DoomScrollView extends ItemView {
 	constructor(
 		leaf: WorkspaceLeaf,
 		private readonly baseContexts: BaseContextRegistry,
+		private readonly textSearchContexts: TextSearchContextRegistry,
 		private readonly getExcludedFolders: () => readonly ExcludedFolderRule[],
 	) {
 		super(leaf);
@@ -59,7 +61,9 @@ export class DoomScrollView extends ItemView {
 	}
 
 	override getState(): Record<string, unknown> {
-		return this.state && this.state.source !== 'base'
+		return this.state &&
+			this.state.source !== 'base' &&
+			this.state.source !== 'text'
 			? { ...this.state }
 			: {};
 	}
@@ -102,6 +106,7 @@ export class DoomScrollView extends ItemView {
 			this.app,
 			this.state,
 			this.baseContexts,
+			this.textSearchContexts,
 			this.getExcludedFolders(),
 		);
 		const anchor = resolved?.files[resolved.anchorIndex];
@@ -120,6 +125,7 @@ export class DoomScrollView extends ItemView {
 				}
 				this.saveScrollPosition();
 				this.baseContexts.renamePath(oldPath, file.path);
+				this.textSearchContexts.renamePath(oldPath, file.path);
 				this.history.updateContexts((context) =>
 					context.anchorPath === oldPath
 						? { ...context, anchorPath: file.path }
@@ -158,6 +164,7 @@ export class DoomScrollView extends ItemView {
 			this.app,
 			this.state,
 			this.baseContexts,
+			this.textSearchContexts,
 			this.getExcludedFolders(),
 		);
 		if (!resolved) {
@@ -180,6 +187,8 @@ export class DoomScrollView extends ItemView {
 			parentEl: feedHostEl,
 			files: resolved.files,
 			anchorIndex: resolved.anchorIndex,
+			highlightText:
+				this.state.source === 'text' ? this.state.query : undefined,
 			initialScrollTop: this.history?.current.scrollTop ?? undefined,
 			onInternalLink: (sourceFile, linkText) => {
 				this.openJunction(sourceFile, linkText);
