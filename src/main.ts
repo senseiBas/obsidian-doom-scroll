@@ -55,6 +55,20 @@ export default class DoomScrollPlugin extends Plugin {
 				return true;
 			},
 		});
+		this.addCommand({
+			id: 'exit-feed',
+			name: 'Exit feed to anchor note',
+			checkCallback: (checking) => {
+				const view = this.app.workspace.getActiveViewOfType(DoomScrollView);
+				if (!view) {
+					return false;
+				}
+				if (!checking) {
+					view.exitToAnchor();
+				}
+				return true;
+			},
+		});
 
 		this.registerEvent(
 			this.app.workspace.on('file-menu', (menu, file, _source, leaf) => {

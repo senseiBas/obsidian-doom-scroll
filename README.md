@@ -25,6 +25,17 @@ Obsidian Doom Scroll is a community plugin for browsing a vault as a continuous,
 - In-memory Back and Forward navigation with scroll restoration.
 - Desktop and mobile support.
 
+## Commands and entry points
+
+- Use the ribbon icon or **Doom scroll: Open feed…** while a Markdown note is
+  active.
+- Use **Doom scroll…** from a Markdown file's context menu.
+- Choose Folder, Folder + subfolders, Outgoing links, Backlinks, or one exact
+  tag from the source picker.
+- Use **Doom scroll: Exit feed to anchor note** or the visible **Exit feed**
+  button to return to the anchor in source mode, focused at the end of the note.
+- Each rendered note also has **Open** and **Edit / exit here** actions.
+
 ## Using a Base as a feed
 
 Open a `.base` file, add or select a view, and choose **Doom scroll** from
@@ -35,6 +46,48 @@ the Base configuration updates the feed without changing the source file.
 The first result is the initial anchor. Following an internal link to another
 note in the same result set offers **Doom scroll: Current Base view**, which
 keeps the Base ordering and makes the navigation available to Back and Forward.
+
+## Architecture
+
+Feed state describes only the source type, anchor, and source parameters.
+Dedicated source resolvers turn that state into an ordered list of vault files.
+This keeps folder, link, backlink, tag, and Base logic separate so more source
+types can be added without coupling them to rendering.
+
+The shared virtual feed estimates the full scroll height but mounts only the
+visible notes and a small overscan buffer. Measured note heights replace those
+estimates, with scroll correction when content above the viewport changes.
+Every mounted note owns an Obsidian component lifecycle and uses
+`MarkdownRenderer`, so unmounted notes also release their render children and
+listeners.
+
+Internal links are intercepted only inside rendered feed notes. The junction
+menu can open the destination normally or branch to a new feed. Feed contexts
+and scroll positions are kept in memory for Back and Forward navigation.
+
+## Mobile behavior and local deployment
+
+The runtime uses only Obsidian's cross-platform APIs and browser APIs available
+in Obsidian mobile. It has no Node.js filesystem or Electron dependency. Touch
+targets are at least 44 pixels on mobile, the feed uses native momentum
+scrolling, and editing always hands the note back to Obsidian's normal editor.
+
+For direct desktop and Obsidian Sync testing, place this repository at
+`.obsidian/plugins/obsidian-doom-scroll`. Run `npm run build`; the loadable
+artifacts are `main.js`, `manifest.json`, and `styles.css` in that directory.
+
+## Known limitations
+
+- Obsidian's public API does not expose a supported way to execute an arbitrary
+  Base query headlessly. Doom Scroll therefore integrates as a registered Base
+  view and consumes the result set that Obsidian supplies there.
+- Grouped Base results are shown as one ordered feed; group headings are not
+  rendered in version 0.1.0.
+- Feed history and Base snapshots are deliberately in memory only and are not
+  restored after restarting Obsidian.
+- Interactive verification must be performed separately on desktop and mobile;
+  automated checks cover source ordering, context history, type safety, linting,
+  and production bundling.
 
 ## Development
 

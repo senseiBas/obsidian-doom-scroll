@@ -87,6 +87,23 @@ export class DoomScrollView extends ItemView {
 		this.feedComponent?.refresh();
 	}
 
+	exitToAnchor(): void {
+		if (!this.state) {
+			return;
+		}
+		const resolved = resolveFeed(
+			this.app,
+			this.state,
+			this.baseContexts,
+		);
+		const anchor = resolved?.files[resolved.anchorIndex];
+		if (!anchor) {
+			new Notice('Doom scroll anchor note is no longer available.');
+			return;
+		}
+		void openFileForEditing(this.leaf, anchor);
+	}
+
 	private registerVaultEvents(): void {
 		this.registerEvent(
 			this.app.vault.on('rename', (file, oldPath) => {
@@ -143,7 +160,7 @@ export class DoomScrollView extends ItemView {
 		}
 
 		const shellEl = this.contentEl.createDiv('doom-scroll-shell');
-		this.renderToolbar(shellEl, anchor);
+		this.renderToolbar(shellEl);
 		const feedHostEl = shellEl.createDiv('doom-scroll-feed-host');
 		this.feedComponent = new VirtualFeed({
 			app: this.app,
@@ -164,7 +181,7 @@ export class DoomScrollView extends ItemView {
 		this.addChild(this.feedComponent);
 	}
 
-	private renderToolbar(shellEl: HTMLElement, anchor: TFile): void {
+	private renderToolbar(shellEl: HTMLElement): void {
 		const toolbarEl = shellEl.createDiv('doom-scroll-toolbar');
 		const historyEl = toolbarEl.createDiv('doom-scroll-history-actions');
 		new ButtonComponent(historyEl)
@@ -186,9 +203,7 @@ export class DoomScrollView extends ItemView {
 			.setButtonText('Exit feed')
 			.setIcon('x')
 			.setTooltip('Exit to the anchor note')
-			.onClick(() => {
-				void openFileForEditing(this.leaf, anchor);
-			});
+			.onClick(() => this.exitToAnchor());
 	}
 
 	private openJunction(sourceFile: TFile, linkText: string): void {
