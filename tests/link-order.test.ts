@@ -39,6 +39,18 @@ describe('resolveOutgoingPaths', () => {
 			),
 		).toEqual(['Anchor.md']);
 	});
+
+	it('appends resolved destinations missing from the reference cache', () => {
+		const references = [link('First', 10)];
+		expect(
+			resolveOutgoingPaths(
+				'Anchor.md',
+				references,
+				(value) => (value === 'First' ? 'First.md' : null),
+				['First.md', 'Recovered.md'],
+			),
+		).toEqual(['Anchor.md', 'First.md', 'Recovered.md']);
+	});
 });
 
 describe('resolveBacklinkPaths', () => {

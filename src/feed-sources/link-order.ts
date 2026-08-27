@@ -11,6 +11,7 @@ export function resolveOutgoingPaths(
 	anchorPath: string,
 	references: readonly PositionedLink[],
 	resolveLink: (link: string) => string | null,
+	resolvedDestinationPaths: readonly string[] = [],
 ): string[] {
 	const paths = [anchorPath];
 	const seen = new Set(paths);
@@ -23,6 +24,13 @@ export function resolveOutgoingPaths(
 
 	for (const reference of orderedReferences) {
 		const path = resolveLink(reference.link);
+		if (path && !seen.has(path)) {
+			seen.add(path);
+			paths.push(path);
+		}
+	}
+
+	for (const path of resolvedDestinationPaths) {
 		if (path && !seen.has(path)) {
 			seen.add(path);
 			paths.push(path);

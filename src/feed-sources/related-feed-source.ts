@@ -51,14 +51,22 @@ function resolveOutgoingFiles(app: App, anchor: TFile): TFile[] {
 		...(cache?.links ?? []),
 		...(cache?.embeds ?? []),
 	];
-	const paths = resolveOutgoingPaths(anchor.path, references, (link) => {
-		return (
-			app.metadataCache.getFirstLinkpathDest(
-				getLinkpath(link),
-				anchor.path,
-			)?.path ?? null
-		);
-	});
+	const resolvedDestinationPaths = Object.keys(
+		app.metadataCache.resolvedLinks[anchor.path] ?? {},
+	);
+	const paths = resolveOutgoingPaths(
+		anchor.path,
+		references,
+		(link) => {
+			return (
+				app.metadataCache.getFirstLinkpathDest(
+					getLinkpath(link),
+					anchor.path,
+				)?.path ?? null
+			);
+		},
+		resolvedDestinationPaths,
+	);
 
 	return paths
 		.map((path) => app.vault.getFileByPath(path))
