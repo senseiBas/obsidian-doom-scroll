@@ -29,6 +29,20 @@ export class DoomScrollSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
+			.setName('Open feed in side pane')
+			.setDesc(
+				'Open Doom scroll feeds in the right sidebar so your current note stays open. Turn off to replace the active pane instead.',
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.controller.settings.openInSidePane)
+					.onChange(async (value) => {
+						this.controller.settings.openInSidePane = value;
+						await this.controller.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
 			.setName('Excluded folders')
 			.setDesc(
 				'Hide these folders from folder, tag, outgoing-link, and backlink feeds. Base views keep their own exact results.',

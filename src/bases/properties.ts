@@ -1,0 +1,176 @@
+import { type App, type TFile } from 'obsidian';
+import type { BasesEntry, BasesPropertyId, BasesViewConfig } from 'obsidian';
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}/;
+
+function isDateLike(value: unknown): value is string {
+	return typeof value === 'string' && DATE_RE.test(value);
+}
+
+/**
+ * Split a Base property id into its source type and name. Handles both the
+ * prefixed form (`note.done`, `file.name`) and the bare form (`done`) that
+ * Bases may store in the view config; bare names are treated as note
+ * (frontmatter) properties.
+ */
+function parseProp(propId: string): { type: string; name: string } {
+	const dot = propId.indexOf('.');
+	if (dot > 0) {
+		const type = propId.slice(0, dot);
+		if (type === 'note' || type === 'file' || type === 'formula') {
+			return { type, name: propId.slice(dot + 1) };
+		}
+	}
+	return { type: 'note', name: propId };
+}
+
+/**
+ * Look up Obsidian's declared widget type for a property (e.g. `checkbox`,
+ * `date`). This lets us render an editable control even when no note has the
+ * property yet. The metadata type manager is not part of the public typings, so
+ * we access it defensively and degrade gracefully.
+ */
+function getDeclaredType(app: App, name: string): string | undefined {
+	const manager = (
+		app as unknown as {
+			metadataTypeManager?: {
+				getPropertyInfo?: (
+					key: string,
+				) => { widget?: string; type?: string } | undefined;
+				properties?: Record<
+					string,
+					{ widget?: string; type?: string } | undefined
+				>;
+			};
+		}
+	).metadataTypeManager;
+	if (!manager) return undefined;
+	const key = name.toLowerCase();
+	const info = manager.getPropertyInfo?.(key) ?? manager.properties?.[key];
+	return info?.widget ?? info?.type;
+}
+
+/**
+ * Render a note's Base-visible properties into a container. Checkbox and date
+ * properties become inline editable controls — shown even when the note does
+ * not yet have a value, so they can be set directly. Everything else is a
+ * read-only chip. The set of properties comes entirely from the Base view
+ * configuration (its property order), so the plugin has no opinion about which
+ * property names appear.
+ *
+ * @returns the number of property chips rendered.
+ */
+export function renderProperties(
+	app: App,
+	containerEl: HTMLElement,
+	entry: BasesEntry,
+	config: BasesViewConfig,
+	order: BasesPropertyId[],
+): number {
+	const file = entry.file;
+	const frontmatter = (app.metadataCache.getFileCache(file)?.frontmatter ??
+		{}) as Record<string, unknown>;
+	let rendered = 0;
+
+	for (const propId of order) {
+		const parsed = parseProp(propId);
+		// The file name is already shown as the card title.
+		if (parsed.type === 'file' && parsed.name === 'name') continue;
+
+		const label = config.getDisplayName(propId);
+
+		if (parsed.type === 'note') {
+			const fmValue = frontmatter[parsed.name];
+			const declared = getDeclaredType(app, parsed.name);
+
+			if (declared === 'checkbox' || typeof fmValue === 'boolean') {
+				renderBoolean(
+					app,
+					containerEl,
+					file,
+					parsed.name,
+					label,
+					fmValue === true,
+				);
+				rendered += 1;
+				continue;
+			}
+			if (
+				declared === 'date' ||
+				declared === 'datetime' ||
+				isDateLike(fmValue)
+			) {
+				renderDate(
+					app,
+					containerEl,
+					file,
+					parsed.name,
+					label,
+					typeof fmValue === 'string' ? fmValue : '',
+				);
+				rendered += 1;
+				continue;
+			}
+		}
+
+		const value = entry.getValue(propId);
+		if (!value || !value.isTruthy()) continue;
+		const chip = containerEl.createDiv('doom-scroll-prop');
+		chip.createSpan({ cls: 'doom-scroll-prop-label', text: `${label}:` });
+		chip.createSpan({
+			cls: 'doom-scroll-prop-value',
+			text: value.toString(),
+		});
+		rendered += 1;
+	}
+
+	return rendered;
+}
+
+function renderBoolean(
+	app: App,
+	containerEl: HTMLElement,
+	file: TFile,
+	name: string,
+	label: string,
+	value: boolean,
+): void {
+	const chip = containerEl.createDiv('doom-scroll-prop doom-scroll-prop-bool');
+	const input = chip.createEl('input', { type: 'checkbox' });
+	input.checked = value;
+	chip.createSpan({ cls: 'doom-scroll-prop-label', text: label });
+	input.addEventListener('change', () => {
+		void app.fileManager.processFrontMatter(
+			file,
+			(fm: Record<string, unknown>) => {
+				fm[name] = input.checked;
+			},
+		);
+	});
+}
+
+function renderDate(
+	app: App,
+	containerEl: HTMLElement,
+	file: TFile,
+	name: string,
+	label: string,
+	value: string,
+): void {
+	const chip = containerEl.createDiv('doom-scroll-prop doom-scroll-prop-date');
+	chip.createSpan({ cls: 'doom-scroll-prop-label', text: `${label}:` });
+	const input = chip.createEl('input', { type: 'date' });
+	input.value = value.slice(0, 10);
+	input.addEventListener('change', () => {
+		void app.fileManager.processFrontMatter(
+			file,
+			(fm: Record<string, unknown>) => {
+				if (input.value) {
+					fm[name] = input.value;
+				} else {
+					delete fm[name];
+				}
+			},
+		);
+	});
+}

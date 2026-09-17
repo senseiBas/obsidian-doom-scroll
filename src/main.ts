@@ -261,12 +261,7 @@ export default class DoomScrollPlugin extends Plugin {
 			new Notice('This note is inside an excluded folder.');
 			return;
 		}
-		const activeMarkdownView =
-			this.app.workspace.getActiveViewOfType(MarkdownView);
-		const targetLeaf =
-			preferredLeaf?.view.navigation === true
-				? preferredLeaf
-				: (activeMarkdownView?.leaf ?? this.app.workspace.getLeaf(false));
+		const targetLeaf = this.getFeedLeaf(preferredLeaf);
 
 		await targetLeaf.setViewState({
 			type: DOOM_SCROLL_VIEW_TYPE,
@@ -274,6 +269,32 @@ export default class DoomScrollPlugin extends Plugin {
 			state,
 		});
 		await this.app.workspace.revealLeaf(targetLeaf);
+	}
+
+	/**
+	 * Pick the leaf a feed should open in. In side-pane mode we reuse the
+	 * existing Doom Scroll leaf if there is one, otherwise open a fresh leaf in
+	 * the right sidebar so the active note stays put. Otherwise we replace the
+	 * active pane (reusing a navigable preferred leaf when available).
+	 */
+	private getFeedLeaf(preferredLeaf?: WorkspaceLeaf): WorkspaceLeaf {
+		if (this.settings.openInSidePane) {
+			const existing = this.app.workspace.getLeavesOfType(
+				DOOM_SCROLL_VIEW_TYPE,
+			)[0];
+			if (existing) {
+				return existing;
+			}
+			return (
+				this.app.workspace.getRightLeaf(false) ??
+				this.app.workspace.getLeaf(true)
+			);
+		}
+		const activeMarkdownView =
+			this.app.workspace.getActiveViewOfType(MarkdownView);
+		return preferredLeaf?.view.navigation === true
+			? preferredLeaf
+			: (activeMarkdownView?.leaf ?? this.app.workspace.getLeaf(false));
 	}
 
 	private async openTextSearchFeed(
@@ -327,7 +348,7 @@ export default class DoomScrollPlugin extends Plugin {
 			new Notice('This note is inside an excluded folder.');
 			return;
 		}
-		const targetLeaf = this.app.workspace.getLeaf(false);
+		const targetLeaf = this.getFeedLeaf();
 		await targetLeaf.setViewState({
 			type: DOOM_SCROLL_VIEW_TYPE,
 			active: true,

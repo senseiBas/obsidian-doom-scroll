@@ -3,6 +3,7 @@ import {
 	ButtonComponent,
 	getLinkpath,
 	Notice,
+	type BasesPropertyId,
 	type QueryController,
 	type TFile,
 } from 'obsidian';
@@ -23,6 +24,7 @@ import { JunctionModal } from '../ui/junction-modal';
 import { TagJunctionModal } from '../ui/tag-junction-modal';
 import { VirtualFeed } from '../ui/virtual-feed';
 import type { BaseContextRegistry } from './base-context-registry';
+import { renderProperties } from './properties';
 
 export type StartFeedFromBase = (
 	baseState: BaseFeedState,
@@ -39,6 +41,7 @@ export class DoomScrollBasesView extends BasesView {
 	private files: TFile[] = [];
 	private quickEditing = false;
 	private pendingDataRefresh = false;
+	private readonly collapsedPaths = new Set<string>();
 
 	constructor(
 		controller: QueryController,
@@ -112,12 +115,29 @@ export class DoomScrollBasesView extends BasesView {
 		const shellEl = this.rootEl.createDiv('doom-scroll-shell');
 		this.renderToolbar(shellEl, anchor);
 		const feedHostEl = shellEl.createDiv('doom-scroll-feed-host');
+		const propertyOrder: BasesPropertyId[] = this.config?.getOrder?.() ?? [];
+		const entriesByPath = new Map(
+			this.data.data.map((entry) => [entry.file.path, entry]),
+		);
 		this.feedComponent = new VirtualFeed({
 			app: this.app,
 			parentEl: feedHostEl,
 			files: this.files,
 			anchorIndex,
 			initialScrollTop: this.history?.current.scrollTop ?? undefined,
+			onRenderProperties: (file, containerEl) => {
+				const entry = entriesByPath.get(file.path);
+				if (!entry) {
+					return 0;
+				}
+				return renderProperties(
+					this.app,
+					containerEl,
+					entry,
+					this.config,
+					propertyOrder,
+				);
+			},
 			onInternalLink: (sourceFile, linkText) => {
 				this.openJunction(sourceFile, linkText);
 			},
@@ -143,6 +163,10 @@ export class DoomScrollBasesView extends BasesView {
 					this.renderFeed();
 				}
 			},
+			onDeleteNote: (file) => {
+				void this.app.fileManager.promptForDeletion(file);
+			},
+			collapsedPaths: this.collapsedPaths,
 		});
 		this.addChild(this.feedComponent);
 	}
@@ -165,6 +189,14 @@ export class DoomScrollBasesView extends BasesView {
 			cls: 'doom-scroll-source-label',
 			text: `Base: ${this.config.name || 'Base view'}`,
 		});
+		new ButtonComponent(toolbarEl)
+			.setIcon('chevrons-down-up')
+			.setTooltip('Collapse all notes')
+			.onClick(() => this.feedComponent?.collapseAll());
+		new ButtonComponent(toolbarEl)
+			.setIcon('chevrons-up-down')
+			.setTooltip('Expand all notes')
+			.onClick(() => this.feedComponent?.expandAll());
 		new ButtonComponent(toolbarEl)
 			.setButtonText('Exit feed')
 			.setIcon('x')

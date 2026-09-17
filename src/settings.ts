@@ -5,19 +5,25 @@ export type ExcludedFolderRule = {
 
 export type DoomScrollSettings = {
 	excludedFolders: ExcludedFolderRule[];
+	openInSidePane: boolean;
 };
 
 export const DEFAULT_SETTINGS: DoomScrollSettings = {
 	excludedFolders: [],
+	openInSidePane: true,
 };
 
 export function normalizeSettings(value: unknown): DoomScrollSettings {
 	if (!value || typeof value !== 'object') {
-		return { excludedFolders: [] };
+		return { ...DEFAULT_SETTINGS };
 	}
 	const candidate = value as Partial<DoomScrollSettings>;
+	const openInSidePane =
+		typeof candidate.openInSidePane === 'boolean'
+			? candidate.openInSidePane
+			: DEFAULT_SETTINGS.openInSidePane;
 	if (!Array.isArray(candidate.excludedFolders)) {
-		return { excludedFolders: [] };
+		return { excludedFolders: [], openInSidePane };
 	}
 
 	const seen = new Set<string>();
@@ -37,7 +43,7 @@ export function normalizeSettings(value: unknown): DoomScrollSettings {
 			excludedFolders.push({ path, includeSubfolders: rule.includeSubfolders });
 		}
 	}
-	return { excludedFolders };
+	return { excludedFolders, openInSidePane };
 }
 
 export function normalizeFolderPath(path: string): string {

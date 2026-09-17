@@ -16,6 +16,7 @@ describe('normalizeSettings', () => {
 				{ path: 'templates', includeSubfolders: true },
 				{ path: 'copilot', includeSubfolders: false },
 			],
+			openInSidePane: true,
 		});
 	});
 
@@ -32,6 +33,13 @@ describe('normalizeSettings', () => {
 			excludedFolders: [
 				{ path: 'valid', includeSubfolders: false },
 			],
+			openInSidePane: true,
 		});
+	});
+
+	it('reads a stored openInSidePane flag', () => {
+		expect(
+			normalizeSettings({ excludedFolders: [], openInSidePane: false }),
+		).toEqual({ excludedFolders: [], openInSidePane: false });
 	});
 });
