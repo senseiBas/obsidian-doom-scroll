@@ -34,9 +34,11 @@ export class DoomScrollView extends ItemView {
 	private state: DoomScrollViewState | null = null;
 	private history: FeedHistory<DoomScrollViewState> | null = null;
 	private feedComponent: VirtualFeed | null = null;
+	private currentNoteEl: HTMLElement | null = null;
 	private opened = false;
 	private quickEditing = false;
 	private pendingVaultRefresh = false;
+	private readonly collapsedPaths = new Set<string>();
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -212,6 +214,15 @@ export class DoomScrollView extends ItemView {
 					this.rerenderPreservingScroll();
 				}
 			},
+			onVisibleNoteChange: (file) => {
+				if (this.currentNoteEl) {
+					this.currentNoteEl.setText(file.basename);
+				}
+			},
+			onDeleteNote: (file) => {
+				void this.app.fileManager.promptForDeletion(file);
+			},
+			collapsedPaths: this.collapsedPaths,
 		});
 		this.addChild(this.feedComponent);
 	}
@@ -230,10 +241,23 @@ export class DoomScrollView extends ItemView {
 			.setDisabled(!(this.history?.canGoForward ?? false))
 			.onClick(() => this.goForward());
 
-		toolbarEl.createDiv({
+		this.currentNoteEl = null;
+		const titlesEl = toolbarEl.createDiv('doom-scroll-toolbar-titles');
+		titlesEl.createDiv({
 			cls: 'doom-scroll-source-label',
 			text: this.state ? describeFeedSource(this.state) : '',
 		});
+		this.currentNoteEl = titlesEl.createDiv({
+			cls: 'doom-scroll-current-note',
+		});
+		new ButtonComponent(toolbarEl)
+			.setIcon('chevrons-down-up')
+			.setTooltip('Collapse all notes')
+			.onClick(() => this.feedComponent?.collapseAll());
+		new ButtonComponent(toolbarEl)
+			.setIcon('chevrons-up-down')
+			.setTooltip('Expand all notes')
+			.onClick(() => this.feedComponent?.expandAll());
 		new ButtonComponent(toolbarEl)
 			.setButtonText('Exit feed')
 			.setIcon('x')
@@ -355,6 +379,7 @@ export class DoomScrollView extends ItemView {
 			this.removeChild(this.feedComponent);
 			this.feedComponent = null;
 		}
+		this.currentNoteEl = null;
 		this.quickEditing = false;
 		this.pendingVaultRefresh = false;
 	}

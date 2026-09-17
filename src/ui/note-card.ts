@@ -5,6 +5,7 @@ import {
 	MarkdownRenderer,
 	Notice,
 	Platform,
+	setIcon,
 	type App,
 	type HoverParent,
 	type HoverPopover,
@@ -32,6 +33,18 @@ type NoteCardOptions = {
 	onOpenInBackgroundTab: (file: TFile) => void;
 	onQuickEditStart: () => boolean;
 	onQuickEditEnd: () => void;
+	/** Delete this note (with the user's usual confirmation / trash behaviour). */
+	onDelete?: (file: TFile) => void;
+	/** Whether the card should start collapsed (content hidden). */
+	initialCollapsed?: boolean;
+	/** Notify the host when the user toggles this card's collapsed state. */
+	onToggleCollapse?: (collapsed: boolean) => void;
+	/**
+	 * Render Base-configured properties into the given container. Only supplied
+	 * in the Bases view; returns the number of chips rendered so the card can
+	 * drop the container when there is nothing to show.
+	 */
+	onRenderProperties?: (file: TFile, containerEl: HTMLElement) => number;
 };
 
 export class NoteCard extends Component implements HoverParent {
@@ -42,6 +55,9 @@ export class NoteCard extends Component implements HoverParent {
 	private resizeObserver: ResizeObserver | null = null;
 	private readonly passThroughTags = new WeakSet<HTMLElement>();
 	private markdownEl: HTMLElement | null = null;
+	private propsEl: HTMLElement | null = null;
+	private collapseEl: HTMLElement | null = null;
+	private collapsed = false;
 	private editButton: ButtonComponent | null = null;
 	private previewComponent: Component | null = null;
 	private quickEditor: QuickEditPanel | null = null;
@@ -62,6 +78,42 @@ export class NoteCard extends Component implements HoverParent {
 	override onload(): void {
 		this.active = true;
 		const headerEl = this.containerEl.createDiv('doom-scroll-note-header');
+
+		const collapseEl = headerEl.createDiv({
+			cls: 'doom-scroll-note-collapse',
+			attr: { 'aria-label': 'Collapse note', role: 'button' },
+		});
+		setIcon(collapseEl, 'chevron-down');
+		this.collapseEl = collapseEl;
+		this.registerDomEvent(collapseEl, 'click', () => this.toggleCollapse());
+
+		const dragHandleEl = headerEl.createDiv({
+			cls: 'doom-scroll-drag-handle',
+			attr: {
+				draggable: 'true',
+				'aria-label': 'Drag to insert a link (Ctrl/Cmd: embed)',
+			},
+		});
+		setIcon(dragHandleEl, 'grip-vertical');
+		this.registerDomEvent(dragHandleEl, 'dragstart', (event) => {
+			if (!event.dataTransfer) {
+				return;
+			}
+			const link = this.options.app.fileManager.generateMarkdownLink(
+				this.options.file,
+				'',
+			);
+			// Ctrl/Cmd while dragging inserts an embed instead of a plain link.
+			const embed = event.ctrlKey || event.metaKey;
+			event.dataTransfer.clearData();
+			event.dataTransfer.setData('text/plain', embed ? `!${link}` : link);
+			event.dataTransfer.effectAllowed = 'copyLink';
+			this.containerEl.addClass('is-dragging');
+		});
+		this.registerDomEvent(dragHandleEl, 'dragend', () => {
+			this.containerEl.removeClass('is-dragging');
+		});
+
 		const titleEl = headerEl.createDiv({
 			cls: 'doom-scroll-note-title',
 			text: this.options.file.basename,
@@ -96,6 +148,24 @@ export class NoteCard extends Component implements HoverParent {
 				}
 			});
 		this.editButton.setDisabled(true);
+
+		new ButtonComponent(actionsEl)
+			.setIcon('trash-2')
+			.setTooltip('Delete note')
+			.onClick(() => this.options.onDelete?.(this.options.file));
+
+		if (this.options.onRenderProperties) {
+			const propsEl = this.containerEl.createDiv('doom-scroll-note-props');
+			const count = this.options.onRenderProperties(
+				this.options.file,
+				propsEl,
+			);
+			if (count === 0) {
+				propsEl.remove();
+			} else {
+				this.propsEl = propsEl;
+			}
+		}
 
 		this.markdownEl = this.containerEl.createDiv({
 			cls: ['doom-scroll-note-content', 'markdown-rendered'],
@@ -189,6 +259,10 @@ export class NoteCard extends Component implements HoverParent {
 		});
 		this.resizeObserver.observe(this.containerEl);
 
+		if (this.options.initialCollapsed) {
+			this.applyCollapsed(true);
+		}
+
 		void this.renderPreview();
 	}
 
@@ -198,6 +272,8 @@ export class NoteCard extends Component implements HoverParent {
 		this.resizeObserver?.disconnect();
 		this.resizeObserver = null;
 		this.markdownEl = null;
+		this.propsEl = null;
+		this.collapseEl = null;
 		this.editButton = null;
 		this.previewComponent = null;
 		this.quickEditor = null;
@@ -205,7 +281,35 @@ export class NoteCard extends Component implements HoverParent {
 		this.containerEl.remove();
 	}
 
+	/** Set the collapsed state from the host (does not fire onToggleCollapse). */
+	setCollapsed(collapsed: boolean): void {
+		if (collapsed !== this.collapsed) {
+			this.applyCollapsed(collapsed);
+		}
+	}
+
+	private toggleCollapse(): void {
+		this.applyCollapsed(!this.collapsed);
+		this.options.onToggleCollapse?.(this.collapsed);
+	}
+
+	private applyCollapsed(collapsed: boolean): void {
+		this.collapsed = collapsed;
+		this.containerEl.toggleClass('is-collapsed', collapsed);
+		if (this.collapseEl) {
+			setIcon(this.collapseEl, collapsed ? 'chevron-right' : 'chevron-down');
+			this.collapseEl.setAttribute(
+				'aria-label',
+				collapsed ? 'Expand note' : 'Collapse note',
+			);
+		}
+	}
+
 	private async startQuickEdit(): Promise<void> {
+		if (this.collapsed) {
+			this.applyCollapsed(false);
+			this.options.onToggleCollapse?.(false);
+		}
 		this.containerEl.scrollIntoView({
 			behavior: 'auto',
 			block: 'start',
